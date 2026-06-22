@@ -1,26 +1,27 @@
 pipeline {
-      agent any
+    agent any
 
-      stages {
-          stage('Build') {
-              steps {
-                  sh './gradlew clean build -x test --no-daemon'
-              }
-          }
+    stages {
+        stage('Build') {
+            steps {
+                sh 'chmod +x ./gradlew'
+                sh './gradlew clean build -x test --no-daemon'
+            }
+        }
 
-          stage('Test') {
-              steps {
-                  sh './gradlew test --no-daemon'
-              }
-          }
-      }
+        stage('Test') {
+            steps {
+                sh './gradlew test --no-daemon'
+            }
+        }
+    }
 
-      post {
-          success {
-              echo 'CI passed'
-          }
-          failure {
-              echo 'CI failed'
-          }
-      }
-  }
+    post {
+        success {
+            echo 'CI passed'
+        }
+        failure {
+            echo 'CI failed'
+        }
+    }
+}
