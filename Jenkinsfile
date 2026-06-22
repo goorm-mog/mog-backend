@@ -18,10 +18,16 @@ pipeline {
 
     post {
         success {
-            echo 'CI passed'
+            githubNotify credentialsId: 'github-token',
+                        status: 'SUCCESS',
+                        description: 'Build and tests passed',
+                        context: 'Jenkins CI'
         }
         failure {
-            echo 'CI failed'
+            githubNotify credentialsId: 'github-token',
+                        status: 'FAILURE',
+                        description: 'Build or tests failed',
+                        context: 'Jenkins CI'
         }
     }
 }
