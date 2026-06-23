@@ -39,4 +39,9 @@ public class MeetingRecord extends BaseEntity {
         this.placeName = placeName;
         this.memo = memo;
     }
+
+    public void update(String placeName, String memo) {
+        if (placeName != null) this.placeName = placeName;
+        if (memo != null) this.memo = memo;
+    }
 }
