@@ -46,6 +46,9 @@ public class MeetingRecordService {
                 .seq(nextSeq)
                 .placeName(request.placeName())
                 .memo(request.memo())
+                .payerRoomMemberId(request.payer() != null ? request.payer().roomMemberId() : null)
+                .payerBankName(request.payer() != null ? request.payer().bankName() : null)
+                .payerAccountNumber(request.payer() != null ? request.payer().accountNumber() : null)
                 .build();
         meetingRecordRepository.save(record);
 
@@ -70,7 +73,13 @@ public class MeetingRecordService {
         MeetingRecord record = meetingRecordRepository.findByIdAndRoomId(recordId, roomId)
                 .orElseThrow(() -> new GlobalException(ErrorCode.RECORD_NOT_FOUND));
 
-        record.update(request.placeName(), request.memo());
+        record.update(
+                request.placeName(),
+                request.memo(),
+                request.payer() != null ? request.payer().roomMemberId() : null,
+                request.payer() != null ? request.payer().bankName() : null,
+                request.payer() != null ? request.payer().accountNumber() : null
+        );
 
         List<MeetingMemberCost> costs;
         if (request.participants() != null) {
