@@ -1,0 +1,16 @@
+[33mcommit 1ab07ad6c9e44fc40bc76ee752d7f01e03f37f42[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/MOG-21[m[33m, [m[1;31morigin/feature/MOG-21[m[33m)[m
+Author: jgu330 <gyeoun330@gmail.com>
+Date:   Wed Jun 24 11:01:34 2026 +0900
+
+    [MOG-21] 웹소켓, 레디스, 카카오api 연동설정
+
+ build.gradle                                       |  8 [32m+++[m
+ .../com/mog/project/global/config/RedisConfig.java | 57 [32m++++++++++++++++++++++[m
+ .../com/mog/project/global/config/RedusConfig.java |  5 [31m--[m
+ .../mog/project/global/config/WebClientConfig.java | 16 [32m+++++[m[31m-[m
+ .../mog/project/global/config/WebSocketConfig.java | 22 [32m++++++++[m[31m-[m
+ .../mog/project/global/redis/RedisPublisher.java   | 16 [32m++++++[m
+ .../mog/project/global/redis/RedisSubscriber.java  | 23 [32m+++++++++[m
+ src/main/resources/application-dev.yaml.example    | 41 [31m----------------[m
+ src/main/resources/application-prod.yaml.example   | 41 [31m----------------[m
+ 9 files changed, 139 insertions(+), 90 deletions(-)
