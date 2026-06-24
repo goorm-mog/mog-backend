@@ -16,7 +16,7 @@ public class S3Config {
     private String accessKey;
 
     // yaml의 aws.credentials.secret-key 값을 읽음
-    @Value("${aws.credentials.secret-key-key}")
+    @Value("${aws.credentials.secret-key}")
     private String secretKey;
 
     @Value("${aws.region}")
