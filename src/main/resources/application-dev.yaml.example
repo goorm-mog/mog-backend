@@ -1,0 +1,41 @@
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/moge_db
+    username:         # 로컬 DB 유저명
+    password:         # 로컬 DB 비밀번호
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: true
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-id:      # Kakao Developers에서 발급받은 REST API 키
+            client-secret:  # Kakao Developers에서 발급받은 Client Secret
+            redirect-uri: "http://localhost:8080/login/oauth2/code/kakao"
+            authorization-grant-type: authorization_code
+            client-authentication-method: client_secret_post
+            client-name: Kakao
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+logging:
+  level:
+    root: DEBUG
