@@ -18,6 +18,7 @@ public enum ErrorCode {
     // 만남 기록
     RECORD_NOT_FOUND(404, "RECORD_NOT_FOUND", "해당 차수 기록을 찾을 수 없습니다."),
     INVALID_MEMBER(400, "INVALID_MEMBER", "방 멤버가 아닌 참여자가 포함되어 있습니다."),
+    INVALID_PAYER(400, "INVALID_PAYER", "결제자가 방 멤버가 아닙니다."),
 
     // 방
     ROOM_NOT_FOUND(404, "ROOM_NOT_FOUND", "존재하지 않는 방입니다."),

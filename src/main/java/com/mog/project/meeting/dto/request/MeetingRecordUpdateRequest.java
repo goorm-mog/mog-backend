@@ -15,6 +15,9 @@ public record MeetingRecordUpdateRequest(
         @Size(max = 200, message = "메모는 200자 이하여야 합니다.")
         String memo,
 
+        @Valid
+        PayerRequest payer,
+
         // 참여 멤버 목록
         @Valid
         List<ParticipantRequest> participants

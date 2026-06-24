@@ -14,6 +14,10 @@ public record MeetingRecordCreateRequest(
         @Size(max = 200, message = "메모는 200자 이하여야 합니다.")
         String memo,
 
+        // 결제자 정보
+        @Valid
+        PayerRequest payer,
+
         @Valid // 리스트 안에 ParticipantRequest 각각에 검증
         @NotEmpty(message = "참여 멤버는 최소 1명이어야 합니다.")
         List<ParticipantRequest> participants

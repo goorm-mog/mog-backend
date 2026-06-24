@@ -22,6 +22,8 @@ public record MeetingRecordResponse (
         // 차수의 총 금액 - participants의 amount 합산
         Integer totalCost,
 
+        PayerResponse payer,
+
         // 참여 목록
         List<ParticipantResponse> participants,
 
@@ -46,6 +48,7 @@ public record MeetingRecordResponse (
                 record.getPlaceName(),
                 record.getMemo(),
                 totalCost,
+                PayerResponse.from(record),
                 participants,
                 record.getCreatedAt()
         );
