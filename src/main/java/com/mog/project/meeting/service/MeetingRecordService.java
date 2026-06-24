@@ -6,6 +6,7 @@ import com.mog.project.meeting.dto.request.MeetingRecordCreateRequest;
 import com.mog.project.meeting.dto.request.MeetingRecordUpdateRequest;
 import com.mog.project.meeting.dto.response.MeetingRecordListResponse;
 import com.mog.project.meeting.dto.response.MeetingRecordResponse;
+import com.mog.project.meeting.dto.response.RoomPhotoResponse;
 import com.mog.project.meeting.entity.MeetingMemberCost;
 import com.mog.project.meeting.entity.MeetingRecord;
 
@@ -24,14 +25,21 @@ public class MeetingRecordService {
 
     private final MeetingRecordRepository meetingRecordRepository;
     private final MeetingMemberCostRepository meetingMemberCostRepository;
+    private final RoomPhotoService roomPhotoService;
 
     // 해당 방의 전체 차수 기록 + 사진 조회
     public MeetingRecordListResponse getRecords(Long roomId) {
+
+        // 모든 차수의 목록을 조회
         List<MeetingRecord> records = meetingRecordRepository.findByRoomId(roomId);
 
+        // 모든 차수의 참여자 비용을 조회
         List<MeetingMemberCost> allCosts = meetingMemberCostRepository.findByMeetingRecordIn(records);
 
-        return MeetingRecordListResponse.from(List.of(), records, allCosts);
+        List<RoomPhotoResponse> photos = roomPhotoService.getPhotos(roomId);
+
+        // response DTO에 담아서 조회 결과를 제공
+        return MeetingRecordListResponse.from(photos, records, allCosts);
     }
 
     // 새 차수 추가
@@ -41,6 +49,8 @@ public class MeetingRecordService {
         // 현재 방의 차수를 자동으로 + 1
         int nextSeq = meetingRecordRepository.findMaxSeqByRoomId(roomId) + 1;
 
+        // MeetingRecord Entity를 생성하는데
+        // MeetingRecordCreateRequest 결과를 받기때문에 그 결과를 넣어줌
         MeetingRecord record = MeetingRecord.builder()
                 .roomId(roomId)
                 .seq(nextSeq)
@@ -52,7 +62,7 @@ public class MeetingRecordService {
                 .build();
         meetingRecordRepository.save(record);
 
-        // dto로 형변환
+        // participants 목록을 엔티티로 변환
         List<MeetingMemberCost> costs = request.participants().stream()
                 .map(p -> MeetingMemberCost.builder()
                         .meetingRecord(record)
@@ -62,6 +72,7 @@ public class MeetingRecordService {
                 .toList();
         meetingMemberCostRepository.saveAll(costs);
 
+        // 저장된 엔티티를 응답 DTO로 변환
         return MeetingRecordResponse.from(record, costs);
     }
 
@@ -69,10 +80,11 @@ public class MeetingRecordService {
     @Transactional
     public MeetingRecordResponse updateRecord(Long roomId, Long recordId, MeetingRecordUpdateRequest request) {
 
-        // 다른방 기록 수정 방지
+        // 다른방 기록 수정 방지를 위해 recordId와 roomId로 조회
         MeetingRecord record = meetingRecordRepository.findByIdAndRoomId(recordId, roomId)
                 .orElseThrow(() -> new GlobalException(ErrorCode.RECORD_NOT_FOUND));
 
+        // 엔티티의 update() 메서드 호출, PATCH 방식으로 구현
         record.update(
                 request.placeName(),
                 request.memo(),
@@ -81,6 +93,7 @@ public class MeetingRecordService {
                 request.payer() != null ? request.payer().accountNumber() : null
         );
 
+        // 기존 데이터를 삭제하고 새로 저장하는 방식
         List<MeetingMemberCost> costs;
         if (request.participants() != null) {
             meetingMemberCostRepository.deleteByMeetingRecord(record);
@@ -103,13 +116,17 @@ public class MeetingRecordService {
     @Transactional
     public void deleteRecord(Long roomId, Long recordId) {
 
+        // 레포지토리에서 조회, roomId로 이중 검증
         MeetingRecord record = meetingRecordRepository.findByIdAndRoomId(recordId, roomId)
                 .orElseThrow(() -> new GlobalException(ErrorCode.RECORD_NOT_FOUND));
 
+        // 삭제 전 차수를 저장
         int seq = record.getSeq();
 
+        // 차수를 제거한 뒤
         meetingRecordRepository.delete(record);
 
+        // 삭제된 차수들을 -1만큼씩 땡김
         meetingRecordRepository.decreaseSeqAfter(roomId, seq);
     }
 }

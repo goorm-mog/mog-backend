@@ -3,11 +3,9 @@ package com.mog.project.meeting.dto.response;
 
 import com.mog.project.meeting.entity.MeetingMemberCost;
 import com.mog.project.meeting.entity.MeetingRecord;
-import com.mog.project.meeting.entity.RoomPhoto;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 public record MeetingRecordListResponse(
@@ -15,7 +13,7 @@ public record MeetingRecordListResponse(
         List<MeetingRecordResponse> records
 ) {
     public static MeetingRecordListResponse from(
-            List<RoomPhoto> photos,
+            List<RoomPhotoResponse> photos,
             List<MeetingRecord> records,
             List<MeetingMemberCost> allCosts // 모든 차수의 MeetingMemberCost를 한 번에 조회
     ) {
@@ -24,10 +22,6 @@ public record MeetingRecordListResponse(
         Map<Long, List<MeetingMemberCost>> costsByRecordId = allCosts.stream()
                 .collect(Collectors.groupingBy(cost -> cost.getMeetingRecord().getId()));
 
-        List<RoomPhotoResponse> photoResponses = photos.stream()
-                .map(RoomPhotoResponse::from)
-                .toList();
-
         List<MeetingRecordResponse> recordResponses = records.stream()
                 .map(record -> MeetingRecordResponse.from(
                         record,
@@ -35,7 +29,7 @@ public record MeetingRecordListResponse(
                 ))
                 .toList();
 
-        return new MeetingRecordListResponse(photoResponses, recordResponses);
+        return new MeetingRecordListResponse(photos, recordResponses);
 
     }
 
