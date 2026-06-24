@@ -1,5 +1,5 @@
 package com.mog.project.global.config;
 
-public class RedusConfig {
+public class RedisConfig {
     
 }
