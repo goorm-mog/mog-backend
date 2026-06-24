@@ -1,4 +1,4 @@
-package com.ide.project.global.redis;
+package com.mog.project.global.redis;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.redis.connection.Message;
