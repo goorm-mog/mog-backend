@@ -123,7 +123,8 @@ public class MeetingRecordService {
         // 삭제 전 차수를 저장
         int seq = record.getSeq();
 
-        // 차수를 제거한 뒤
+        // FK가 있는 자식을 먼저 삭제 후 부모 삭제
+        meetingMemberCostRepository.deleteByMeetingRecord(record);
         meetingRecordRepository.delete(record);
 
         // 삭제된 차수들을 -1만큼씩 땡김

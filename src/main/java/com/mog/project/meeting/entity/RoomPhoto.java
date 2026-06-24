@@ -24,8 +24,8 @@ public class RoomPhoto extends BaseEntity {
     private String s3Url;
 
     @Builder
-    public RoomPhoto(Long id, Long roomId, String s3Url) {
-        this.id = id;
+    public RoomPhoto(Long roomId, String s3Url) {
+        this.roomId = roomId;
         this.s3Url = s3Url;
     }
 }
