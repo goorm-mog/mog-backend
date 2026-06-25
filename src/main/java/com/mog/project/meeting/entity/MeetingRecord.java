@@ -1,5 +1,6 @@
 package com.mog.project.meeting.entity;
 
+import com.mog.project.global.config.AccountEncryptionConverter;
 import com.mog.project.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
@@ -37,7 +38,8 @@ public class MeetingRecord extends BaseEntity {
     @Column(name = "payer_bank_name", length = 50)
     private String payerBankName;
 
-    @Column(name = "payer_account_number", length = 50)
+    @Convert(converter = AccountEncryptionConverter.class)
+    @Column(name = "payer_account_number", length = 100)
     private String payerAccountNumber;
 
 
