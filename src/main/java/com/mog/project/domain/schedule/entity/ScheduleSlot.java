@@ -1,4 +1,4 @@
-package com.mog.project.schedule.entity;
+package com.mog.project.domain.schedule.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
