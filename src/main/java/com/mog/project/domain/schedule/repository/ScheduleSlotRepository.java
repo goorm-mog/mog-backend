@@ -8,9 +8,9 @@ import java.util.List;
 public interface ScheduleSlotRepository extends JpaRepository<ScheduleSlot, Long> {
 
     // 방의 모든 슬롯 조회 (슬롯 목록 + 투표 현황 조회 시 사용)
-    List<ScheduleSlot> findByRoomId(Long roomId);
+    List<ScheduleSlot> findAllByRoomId(Long roomId);
 
     // 방의 슬롯 전체 삭제 (슬롯 재등록 시 사용)
-    void deleteByRoomId(Long roomId);
+    void deleteAllByRoomId(Long roomId);
     
 }
