@@ -26,15 +26,20 @@ public enum ErrorCode {
   INVALID_PAYER(HttpStatus.BAD_REQUEST, "INVALID_PAYER", "결제자가 방 멤버가 아닙니다."),
   
   // 방                                                                         
-  ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "ROOM_NOT_FOUND", "존재하지 않는 방입니다."),                                                                      
-   
+  ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "ROOM_NOT_FOUND", "존재하지 않는 방입니다."),
+
+  // 정산
+  NO_RECORDS(HttpStatus.BAD_REQUEST, "NO_RECORDS", "기록된 차수가 없습니다."),
+  SETTLEMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "SETTLEMENT_NOT_FOUND", "정산 내역이 없습니다."),
+  ALREADY_CONFIRMED(HttpStatus.BAD_REQUEST, "ALREADY_CONFIRMED", "이미 확정된 정산입니다."),
+
   // 사진                                                                       
   PHOTO_NOT_FOUND(HttpStatus.NOT_FOUND, "PHOTO_NOT_FOUND", "존재하지 않는 사진입니다."),                                                                    
   PHOTO_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "PHOTO_LIMIT_EXCEEDED", "사진은 최대 3장까지 업로드할 수 있습니다."),                                             
   INVALID_IMAGE(HttpStatus.BAD_REQUEST, "INVALID_IMAGE", "지원하지 않는 이미지 형식입니다."),                                                                    
-  IMAGE_TOO_LARGE(HttpStatus.BAD_REQUEST, "IMAGE_TOO_LARGE", "이미지 크기를 초과했습니다."),                                                                  
-                     
-  // OCR                                                                        
+  IMAGE_TOO_LARGE(HttpStatus.BAD_REQUEST, "IMAGE_TOO_LARGE", "이미지 크기를 초과했습니다."),
+
+  // OCR
   OCR_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "OCR_FAILED", "영수증을 인식할 수 없습니다."),                                                                      
   OCR_SERVICE_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "OCR_SERVICE_ERROR", "OCR 서비스에 일시적인 오류가 발생했습니다.");
   
