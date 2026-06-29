@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import com.mog.project.domain.groups.dto.request.GroupJoinRequest;
 import com.mog.project.domain.groups.dto.request.GroupUpdateRequest;
 import com.mog.project.domain.groups.dto.response.GroupDeleteResponse;
+import com.mog.project.domain.groups.dto.response.GroupDetailResponse;
 import com.mog.project.domain.groups.dto.response.GroupJoinResponse;
 import com.mog.project.domain.groups.dto.response.GroupLeaveResponse;
 import com.mog.project.domain.groups.dto.response.GroupListResponse;
@@ -18,6 +19,9 @@ import com.mog.project.domain.groups.entity.GroupMember;
 import com.mog.project.domain.groups.entity.GroupMemberRole;
 import com.mog.project.domain.groups.repository.GroupMemberRepository;
 import com.mog.project.domain.groups.repository.GroupRepository;
+import com.mog.project.domain.room.entity.Room;
+import com.mog.project.domain.room.entity.RoomStatus;
+import com.mog.project.domain.room.repository.RoomRepository;
 import com.mog.project.domain.user.entity.User;
 import com.mog.project.domain.user.repository.UserRepository;
 import com.mog.project.global.exception.AuthException;
@@ -37,12 +41,13 @@ class GroupServiceTest {
     @Mock private GroupRepository groupRepository;
     @Mock private GroupMemberRepository groupMemberRepository;
     @Mock private UserRepository userRepository;
+    @Mock private RoomRepository roomRepository;
 
     private GroupService groupService;
 
     @BeforeEach
     void setUp() {
-        groupService = new GroupService(groupRepository, groupMemberRepository, userRepository);
+        groupService = new GroupService(groupRepository, groupMemberRepository, userRepository, roomRepository);
     }
 
     // ---- 그룹 참여 ----
@@ -199,6 +204,59 @@ class GroupServiceTest {
                 .isEqualTo(ErrorCode.GROUP_NOT_FOUND));
     }
 
+    // ---- 그룹 상세 조회 ----
+
+    @Test
+    void 그룹_상세_조회에_성공한다() {
+        User user = user("kakao-123");
+        Group group = group("ABC123", "대학 친구들");
+        GroupMember myMember = GroupMember.builder().group(group).user(user).role(GroupMemberRole.LEADER).build();
+        Room room = Room.builder().group(group).roomName("강남역 모임").status(RoomStatus.VOTING).build();
+
+        given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(user));
+        given(groupRepository.findById(1L)).willReturn(Optional.of(group));
+        given(groupMemberRepository.findByGroupGroupIdAndUserUserId(1L, user.getUserId())).willReturn(Optional.of(myMember));
+        given(groupMemberRepository.findByGroupGroupId(1L)).willReturn(List.of(myMember));
+        given(roomRepository.findByGroupGroupIdAndDeletedAtIsNull(1L)).willReturn(List.of(room));
+
+        GroupDetailResponse response = groupService.getGroupDetail("kakao-123", 1L);
+
+        assertThat(response.groupName()).isEqualTo("대학 친구들");
+        assertThat(response.myRole()).isEqualTo(GroupMemberRole.LEADER);
+        assertThat(response.members()).hasSize(1);
+        assertThat(response.rooms()).hasSize(1);
+        assertThat(response.rooms().get(0).roomName()).isEqualTo("강남역 모임");
+    }
+
+    @Test
+    void 그룹_상세_조회_시_멤버가_아니면_NOT_GROUP_MEMBER_예외가_발생한다() {
+        given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(user("kakao-123")));
+        given(groupRepository.findById(1L)).willReturn(Optional.of(group("ABC123", "대학 친구들")));
+        given(groupMemberRepository.findByGroupGroupIdAndUserUserId(1L, null)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> groupService.getGroupDetail("kakao-123", 1L))
+            .isInstanceOf(GlobalException.class)
+            .satisfies(e -> assertThat(((GlobalException) e).getErrorCode())
+                .isEqualTo(ErrorCode.NOT_GROUP_MEMBER));
+    }
+
+    @Test
+    void 그룹_상세_조회_시_방이_없으면_빈_목록을_반환한다() {
+        User user = user("kakao-123");
+        Group group = group("ABC123", "대학 친구들");
+        GroupMember myMember = GroupMember.builder().group(group).user(user).role(GroupMemberRole.MEMBER).build();
+
+        given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(user));
+        given(groupRepository.findById(1L)).willReturn(Optional.of(group));
+        given(groupMemberRepository.findByGroupGroupIdAndUserUserId(1L, user.getUserId())).willReturn(Optional.of(myMember));
+        given(groupMemberRepository.findByGroupGroupId(1L)).willReturn(List.of(myMember));
+        given(roomRepository.findByGroupGroupIdAndDeletedAtIsNull(1L)).willReturn(List.of());
+
+        GroupDetailResponse response = groupService.getGroupDetail("kakao-123", 1L);
+
+        assertThat(response.rooms()).isEmpty();
+    }
+
     // ---- 그룹 삭제 ----
 
     @Test
@@ -291,6 +349,14 @@ class GroupServiceTest {
             .groupName(groupName)
             .inviteCode(inviteCode)
             .kakaoShareUrl("https://mo-ge.site/join?code=" + inviteCode)
+            .build();
+    }
+
+    private Room room(Group group, String roomName) {
+        return Room.builder()
+            .group(group)
+            .roomName(roomName)
+            .status(RoomStatus.VOTING)
             .build();
     }
 }

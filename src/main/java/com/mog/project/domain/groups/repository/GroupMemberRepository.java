@@ -16,6 +16,9 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long>
     List<GroupMember> findByUserUserId(Long userId);
     int countByGroupGroupId(Long groupId);
 
-    // 그룹 수정
+    // 그룹 수정/삭제
     Optional<GroupMember> findByGroupGroupIdAndUserUserId(Long groupId, Long userId);
+
+    // 그룹 상세
+    List<GroupMember> findByGroupGroupId(Long groupId);
 }

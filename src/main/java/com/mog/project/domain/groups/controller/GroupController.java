@@ -8,6 +8,7 @@ import com.mog.project.domain.groups.dto.response.GroupListResponse;
 import com.mog.project.domain.groups.dto.request.GroupUpdateRequest;
 import com.mog.project.domain.groups.dto.response.GroupUpdateResponse;
 import com.mog.project.domain.groups.dto.response.GroupDeleteResponse;
+import com.mog.project.domain.groups.dto.response.GroupDetailResponse;
 import com.mog.project.domain.groups.dto.response.GroupLeaveResponse;  
 import com.mog.project.domain.groups.service.GroupService;
 import com.mog.project.global.common.response.ApiResponse;
@@ -77,8 +78,19 @@ public class GroupController {
             return ResponseEntity.ok(ApiResponse.success("GROUP_LIST_FETCH_SUCCESS", "참여 중인 그룹 목록을 성공적으로 조회했습니다.", response));
     }
 
+    @Operation(summary = "그룹 상세 조회", description = "그룹 상세 정보 및 멤버/방 목록을 조회합니다.",
+        security = @SecurityRequirement(name = "bearerAuth"))
+    @GetMapping("/{groupId}")
+    public ResponseEntity<ApiResponse<GroupDetailResponse>> getGroupDetail(
+        @AuthenticationPrincipal String kakaoId,
+        @PathVariable Long groupId
+    ) {
+        GroupDetailResponse response = groupService.getGroupDetail(kakaoId, groupId);
+        return ResponseEntity.ok(ApiResponse.success("GROUP_DETAIL_FETCH_SUCCESS", "그룹 상세 정보를 성공적으로 조회했습니다.", response));
+    }
+
     @Operation(
-        summary = "그룹 수정", 
+        summary = "그룹 수정",
         description = "그룹 이름을 수정합니다. LEADER만 가능합니다.",
         security = @SecurityRequirement(name = "bearerAuth"))
     @PostMapping("/{groupId}")

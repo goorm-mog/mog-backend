@@ -8,7 +8,9 @@ import com.mog.project.domain.groups.dto.response.GroupListResponse;
 import com.mog.project.domain.groups.dto.request.GroupUpdateRequest;
 import com.mog.project.domain.groups.dto.response.GroupUpdateResponse;
 import com.mog.project.domain.groups.dto.response.GroupDeleteResponse;
+import com.mog.project.domain.groups.dto.response.GroupDetailResponse;
 import com.mog.project.domain.groups.dto.response.GroupLeaveResponse;
+import com.mog.project.domain.room.repository.RoomRepository;
 import com.mog.project.domain.groups.entity.Group;
 import com.mog.project.domain.groups.entity.GroupMember;
 import com.mog.project.domain.groups.entity.GroupMemberRole;
@@ -36,6 +38,7 @@ public class GroupService {
     private final GroupRepository groupRepository;
     private final GroupMemberRepository groupMemberRepository;
     private final UserRepository userRepository;
+    private final RoomRepository roomRepository;
     // 초대 코드 생성 시 중복 방지를 위해 SecureRandom 사용
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -152,6 +155,46 @@ public class GroupService {
             group.getGroupId(),
             group.getGroupName(),
             group.getUpdatedAt()
+        );
+    }
+
+    @Transactional(readOnly = true)
+    public GroupDetailResponse getGroupDetail(String kakaoId, Long groupId) {
+        User user = userRepository.findByKakaoId(kakaoId)
+            .orElseThrow(() -> new AuthException(ErrorCode.UNAUTHORIZED_USER));
+
+        Group group = groupRepository.findById(groupId)
+            .orElseThrow(() -> new GlobalException(ErrorCode.GROUP_NOT_FOUND));
+
+        GroupMember myMembership = groupMemberRepository.findByGroupGroupIdAndUserUserId(groupId, user.getUserId())
+            .orElseThrow(() -> new GlobalException(ErrorCode.NOT_GROUP_MEMBER));
+
+        List<GroupDetailResponse.MemberInfo> members = groupMemberRepository.findByGroupGroupId(groupId)
+            .stream()
+            .map(gm -> new GroupDetailResponse.MemberInfo(
+                gm.getUser().getUserId(),
+                gm.getUser().getNickname(),
+                gm.getRole()
+            ))
+            .toList();
+
+        List<GroupDetailResponse.RoomInfo> rooms = roomRepository.findByGroupGroupIdAndDeletedAtIsNull(groupId)
+            .stream()
+            .map(r -> new GroupDetailResponse.RoomInfo(
+                r.getRoomId(),
+                r.getRoomName(),
+                r.getStatus(),
+                r.getPromiseDate()
+            ))
+            .toList();
+
+        return new GroupDetailResponse(
+            group.getGroupId(),
+            group.getGroupName(),
+            group.getInviteCode(),
+            myMembership.getRole(),
+            members,
+            rooms
         );
     }
 
