@@ -5,8 +5,10 @@ import com.mog.project.domain.groups.dto.response.GroupCreateResponse;
 import com.mog.project.domain.groups.dto.request.GroupJoinRequest;
 import com.mog.project.domain.groups.dto.response.GroupJoinResponse;   
 import com.mog.project.domain.groups.dto.response.GroupListResponse;  
-import com.mog.project.domain.groups.dto.request.GroupUpdateRequest;  
-import com.mog.project.domain.groups.dto.response.GroupUpdateResponse;  
+import com.mog.project.domain.groups.dto.request.GroupUpdateRequest;
+import com.mog.project.domain.groups.dto.response.GroupUpdateResponse;
+import com.mog.project.domain.groups.dto.response.GroupDeleteResponse;
+import com.mog.project.domain.groups.dto.response.GroupLeaveResponse;  
 import com.mog.project.domain.groups.service.GroupService;
 import com.mog.project.global.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;             
@@ -17,13 +19,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;                 
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;                            
-import org.springframework.web.bind.annotation.PostMapping; 
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.bind.annotation.PathVariable;
 
 
 @Tag(name = "Group", description = "그룹 API")
@@ -89,5 +91,26 @@ public class GroupController {
             GroupUpdateResponse response = groupService.updateGroup(kakaoId, groupId, request);
             return ResponseEntity.ok(ApiResponse.success("GROUP_UPDATE_SUCCESS", "그룹 이름이 성공적으로 변경되었습니다.", response));
       }
-    
+
+    @Operation(summary = "그룹 삭제", description = "그룹을 삭제합니다. LEADER만 가능합니다.",
+        security = @SecurityRequirement(name = "bearerAuth"))
+    @DeleteMapping("/{groupId}")
+    public ResponseEntity<ApiResponse<GroupDeleteResponse>> deleteGroup(
+        @AuthenticationPrincipal String kakaoId,
+        @PathVariable Long groupId
+    ) {
+        GroupDeleteResponse response = groupService.deleteGroup(kakaoId, groupId);
+        return ResponseEntity.ok(ApiResponse.success("GROUP_DELETE_SUCCESS", "그룹 및 하위 방들이 소프트 삭제 처리되었습니다.", response));
+    }
+
+    @Operation(summary = "그룹 탈퇴", description = "그룹에서 탈퇴합니다. LEADER는 탈퇴할 수 없습니다.",
+        security = @SecurityRequirement(name = "bearerAuth"))
+    @DeleteMapping("/{groupId}/leave")
+    public ResponseEntity<ApiResponse<GroupLeaveResponse>> leaveGroup(
+        @AuthenticationPrincipal String kakaoId,
+        @PathVariable Long groupId
+    ) {
+        GroupLeaveResponse response = groupService.leaveGroup(kakaoId, groupId);
+        return ResponseEntity.ok(ApiResponse.success("GROUP_LEAVE_SUCCESS", "그룹에서 성공적으로 탈퇴했습니다.", response));
+    }
 }

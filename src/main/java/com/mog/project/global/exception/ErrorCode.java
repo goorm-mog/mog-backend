@@ -25,7 +25,8 @@ public enum ErrorCode {
   GROUP_NOT_FOUND(HttpStatus.NOT_FOUND, "GROUP_NOT_FOUND", "그룹을 찾을 수 없습니다."),
   ALREADY_JOINED_MEMBER(HttpStatus.CONFLICT, "ALREADY_JOINED_MEMBER", "이미 해당 그룹에 가입된 멤버입니다."),
   NOT_GROUP_MEMBER(HttpStatus.FORBIDDEN, "NOT_GROUP_MEMBER", "해당 그룹의 멤버가 아닙니다."),                            
-  NOT_GROUP_LEADER(HttpStatus.FORBIDDEN, "NOT_GROUP_LEADER", "그룹 관리 권한이 없습니다."),    
+  NOT_GROUP_LEADER(HttpStatus.FORBIDDEN, "NOT_GROUP_LEADER", "그룹 관리 권한이 없습니다."),
+  LEADER_CANNOT_LEAVE(HttpStatus.BAD_REQUEST, "LEADER_CANNOT_LEAVE", "그룹장은 그룹을 바로 탈퇴할 수 없습니다. 삭제를 이용해주세요."),    
 
   // 만남 기록
   RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "RECORD_NOT_FOUND", "해당 차수 기록을 찾을 수 없습니다."),

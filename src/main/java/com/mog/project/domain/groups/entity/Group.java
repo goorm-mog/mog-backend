@@ -32,7 +32,11 @@ public class Group extends BaseTimeEntity {
         this.kakaoShareUrl = kakaoShareUrl;
     }
 
-    public void updateName(String groupName) {                  
-      this.groupName = groupName;             
-  }  
+    public void updateName(String groupName) {
+        this.groupName = groupName;
+    }
+
+    public void softDelete() {
+        this.deletedAt = LocalDateTime.now();
+    }
 }

@@ -8,7 +8,9 @@ import static org.mockito.Mockito.verify;
 
 import com.mog.project.domain.groups.dto.request.GroupJoinRequest;
 import com.mog.project.domain.groups.dto.request.GroupUpdateRequest;
+import com.mog.project.domain.groups.dto.response.GroupDeleteResponse;
 import com.mog.project.domain.groups.dto.response.GroupJoinResponse;
+import com.mog.project.domain.groups.dto.response.GroupLeaveResponse;
 import com.mog.project.domain.groups.dto.response.GroupListResponse;
 import com.mog.project.domain.groups.dto.response.GroupUpdateResponse;
 import com.mog.project.domain.groups.entity.Group;
@@ -195,6 +197,82 @@ class GroupServiceTest {
             .isInstanceOf(GlobalException.class)
             .satisfies(e -> assertThat(((GlobalException) e).getErrorCode())
                 .isEqualTo(ErrorCode.GROUP_NOT_FOUND));
+    }
+
+    // ---- 그룹 삭제 ----
+
+    @Test
+    void LEADER가_그룹_삭제에_성공한다() {
+        User user = user("kakao-123");
+        Group group = group("ABC123", "대학 친구들");
+        GroupMember leader = GroupMember.builder().group(group).user(user).role(GroupMemberRole.LEADER).build();
+
+        given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(user));
+        given(groupRepository.findById(1L)).willReturn(Optional.of(group));
+        given(groupMemberRepository.findByGroupGroupIdAndUserUserId(1L, user.getUserId())).willReturn(Optional.of(leader));
+
+        GroupDeleteResponse response = groupService.deleteGroup("kakao-123", 1L);
+
+        assertThat(response.deletedAt()).isNotNull();
+    }
+
+    @Test
+    void MEMBER가_그룹_삭제_시도하면_NOT_GROUP_LEADER_예외가_발생한다() {
+        User user = user("kakao-123");
+        Group group = group("ABC123", "대학 친구들");
+        GroupMember member = GroupMember.builder().group(group).user(user).role(GroupMemberRole.MEMBER).build();
+
+        given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(user));
+        given(groupRepository.findById(1L)).willReturn(Optional.of(group));
+        given(groupMemberRepository.findByGroupGroupIdAndUserUserId(1L, user.getUserId())).willReturn(Optional.of(member));
+
+        assertThatThrownBy(() -> groupService.deleteGroup("kakao-123", 1L))
+            .isInstanceOf(GlobalException.class)
+            .satisfies(e -> assertThat(((GlobalException) e).getErrorCode())
+                .isEqualTo(ErrorCode.NOT_GROUP_LEADER));
+    }
+
+    // ---- 그룹 탈퇴 ----
+
+    @Test
+    void MEMBER가_그룹_탈퇴에_성공한다() {
+        User user = user("kakao-123");
+        Group group = group("ABC123", "대학 친구들");
+        GroupMember member = GroupMember.builder().group(group).user(user).role(GroupMemberRole.MEMBER).build();
+
+        given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(user));
+        given(groupMemberRepository.findByGroupGroupIdAndUserUserId(1L, user.getUserId())).willReturn(Optional.of(member));
+
+        GroupLeaveResponse response = groupService.leaveGroup("kakao-123", 1L);
+
+        assertThat(response.groupId()).isEqualTo(1L);
+        verify(groupMemberRepository).delete(member);
+    }
+
+    @Test
+    void LEADER가_그룹_탈퇴_시도하면_LEADER_CANNOT_LEAVE_예외가_발생한다() {
+        User user = user("kakao-123");
+        Group group = group("ABC123", "대학 친구들");
+        GroupMember leader = GroupMember.builder().group(group).user(user).role(GroupMemberRole.LEADER).build();
+
+        given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(user));
+        given(groupMemberRepository.findByGroupGroupIdAndUserUserId(1L, user.getUserId())).willReturn(Optional.of(leader));
+
+        assertThatThrownBy(() -> groupService.leaveGroup("kakao-123", 1L))
+            .isInstanceOf(GlobalException.class)
+            .satisfies(e -> assertThat(((GlobalException) e).getErrorCode())
+                .isEqualTo(ErrorCode.LEADER_CANNOT_LEAVE));
+    }
+
+    @Test
+    void 그룹_탈퇴_시_그룹멤버가_아니면_NOT_GROUP_MEMBER_예외가_발생한다() {
+        given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(user("kakao-123")));
+        given(groupMemberRepository.findByGroupGroupIdAndUserUserId(1L, null)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> groupService.leaveGroup("kakao-123", 1L))
+            .isInstanceOf(GlobalException.class)
+            .satisfies(e -> assertThat(((GlobalException) e).getErrorCode())
+                .isEqualTo(ErrorCode.NOT_GROUP_MEMBER));
     }
 
     // ---- 헬퍼 ----

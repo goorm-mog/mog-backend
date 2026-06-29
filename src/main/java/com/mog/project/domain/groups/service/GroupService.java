@@ -7,6 +7,8 @@ import com.mog.project.domain.groups.dto.response.GroupJoinResponse;
 import com.mog.project.domain.groups.dto.response.GroupListResponse;
 import com.mog.project.domain.groups.dto.request.GroupUpdateRequest;
 import com.mog.project.domain.groups.dto.response.GroupUpdateResponse;
+import com.mog.project.domain.groups.dto.response.GroupDeleteResponse;
+import com.mog.project.domain.groups.dto.response.GroupLeaveResponse;
 import com.mog.project.domain.groups.entity.Group;
 import com.mog.project.domain.groups.entity.GroupMember;
 import com.mog.project.domain.groups.entity.GroupMemberRole;
@@ -150,6 +152,43 @@ public class GroupService {
             group.getGroupId(),
             group.getGroupName(),
             group.getUpdatedAt()
-      );
-  }
+        );
+    }
+
+    @Transactional
+    public GroupDeleteResponse deleteGroup(String kakaoId, Long groupId) {
+        User user = userRepository.findByKakaoId(kakaoId)
+            .orElseThrow(() -> new AuthException(ErrorCode.UNAUTHORIZED_USER));
+
+        Group group = groupRepository.findById(groupId)
+            .orElseThrow(() -> new GlobalException(ErrorCode.GROUP_NOT_FOUND));
+
+        GroupMember groupMember = groupMemberRepository.findByGroupGroupIdAndUserUserId(groupId, user.getUserId())
+            .orElseThrow(() -> new GlobalException(ErrorCode.NOT_GROUP_MEMBER));
+
+        if (groupMember.getRole() != GroupMemberRole.LEADER) {
+            throw new GlobalException(ErrorCode.NOT_GROUP_LEADER);
+        }
+
+        group.softDelete();
+
+        return new GroupDeleteResponse(group.getGroupId(), group.getDeletedAt());
+    }
+
+    @Transactional
+    public GroupLeaveResponse leaveGroup(String kakaoId, Long groupId) {
+        User user = userRepository.findByKakaoId(kakaoId)
+            .orElseThrow(() -> new AuthException(ErrorCode.UNAUTHORIZED_USER));
+
+        GroupMember groupMember = groupMemberRepository.findByGroupGroupIdAndUserUserId(groupId, user.getUserId())
+            .orElseThrow(() -> new GlobalException(ErrorCode.NOT_GROUP_MEMBER));
+
+        if (groupMember.getRole() == GroupMemberRole.LEADER) {
+            throw new GlobalException(ErrorCode.LEADER_CANNOT_LEAVE);
+        }
+
+        groupMemberRepository.delete(groupMember);
+
+        return new GroupLeaveResponse(groupId, user.getUserId());
+    }
 }
