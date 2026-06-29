@@ -4,6 +4,7 @@ import com.mog.project.domain.groups.dto.request.GroupCreateRequest;
 import com.mog.project.domain.groups.dto.response.GroupCreateResponse;
 import com.mog.project.domain.groups.dto.request.GroupJoinRequest;
 import com.mog.project.domain.groups.dto.response.GroupJoinResponse;
+import com.mog.project.domain.groups.dto.response.GroupListResponse;
 import com.mog.project.domain.groups.entity.Group;
 import com.mog.project.domain.groups.entity.GroupMember;
 import com.mog.project.domain.groups.entity.GroupMemberRole;
@@ -15,12 +16,11 @@ import com.mog.project.global.exception.AuthException;
 import com.mog.project.global.exception.ErrorCode;
 import com.mog.project.global.exception.GlobalException;
 
-
 import java.security.SecureRandom;          
 import lombok.RequiredArgsConstructor;                      
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -109,4 +109,21 @@ public class GroupService {
         }
         return sb.toString();
     }
+
+    @Transactional(readOnly = true)
+    public GroupListResponse getMyGroups(String kakaoId) {
+        User user = userRepository.findByKakaoId(kakaoId)
+          .orElseThrow(() -> new AuthException(ErrorCode.UNAUTHORIZED_USER));
+    
+        List<GroupListResponse.GroupItemResponse> groups = groupMemberRepository.findByUserUserId(user.getUserId())
+        .stream()
+        .map(gm -> new GroupListResponse.GroupItemResponse(
+            gm.getGroup().getGroupId(),
+            gm.getGroup().getGroupName(),
+            groupMemberRepository.countByGroupGroupId(gm.getGroup().getGroupId())
+        ))
+        .toList();
+
+        return new GroupListResponse(groups);
+        }
 }

@@ -3,7 +3,8 @@ package com.mog.project.domain.groups.controller;
 import com.mog.project.domain.groups.dto.request.GroupCreateRequest;                                                    
 import com.mog.project.domain.groups.dto.response.GroupCreateResponse;   
 import com.mog.project.domain.groups.dto.request.GroupJoinRequest;
-import com.mog.project.domain.groups.dto.response.GroupJoinResponse;                                                    
+import com.mog.project.domain.groups.dto.response.GroupJoinResponse;   
+import com.mog.project.domain.groups.dto.response.GroupListResponse;                                                 
 import com.mog.project.domain.groups.service.GroupService;
 import com.mog.project.global.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;             
@@ -15,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;                            
 import org.springframework.web.bind.annotation.PostMapping; 
+import org.springframework.web.bind.annotation.GetMapping; 
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -55,4 +57,17 @@ public class GroupController {
         GroupJoinResponse response = groupService.joinGroup(kakaoId, request);
         return ResponseEntity.ok(ApiResponse.success("GROUP_JOIN_SUCCESS", "그룹 참여에 성공했습니다.", response));
     }
+
+    @Operation(
+        summary = "내 그룹 목록 조회",
+        description = "내가 속한 그룹 목록을 조회합니다.",
+        security = @SecurityRequirement(name = "bearerAuth"))
+    @GetMapping
+        public ResponseEntity<ApiResponse<GroupListResponse>>
+        getMyGroups(
+            @AuthenticationPrincipal String kakaoId
+        ) {
+            GroupListResponse response = groupService.getMyGroups(kakaoId);
+            return ResponseEntity.ok(ApiResponse.success("GROUP_LIST_FETCH_SUCCESS", "참여 중인 그룹 목록을 성공적으로 조회했습니다.", response));
+        }
 }
