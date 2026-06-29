@@ -12,7 +12,6 @@ import com.mog.project.domain.schedule.entity.ScheduleVote;
 import com.mog.project.domain.schedule.repository.ConfirmedScheduleRepository;
 import com.mog.project.domain.schedule.repository.ScheduleSlotRepository;
 import com.mog.project.domain.schedule.repository.ScheduleVoteRepository;
-import com.mog.project.domain.schedule.service.ScheduleWebSocketPublisher;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
