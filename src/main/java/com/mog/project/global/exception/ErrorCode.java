@@ -24,6 +24,8 @@ public enum ErrorCode {
   INVALID_GROUP_NAME(HttpStatus.BAD_REQUEST, "INVALID_GROUP_NAME", "그룹 이름은 1자 이상 20자 이하이어야 합니다."),
   GROUP_NOT_FOUND(HttpStatus.NOT_FOUND, "GROUP_NOT_FOUND", "그룹을 찾을 수 없습니다."),
   ALREADY_JOINED_MEMBER(HttpStatus.CONFLICT, "ALREADY_JOINED_MEMBER", "이미 해당 그룹에 가입된 멤버입니다."),
+  NOT_GROUP_MEMBER(HttpStatus.FORBIDDEN, "NOT_GROUP_MEMBER", "해당 그룹의 멤버가 아닙니다."),                            
+  NOT_GROUP_LEADER(HttpStatus.FORBIDDEN, "NOT_GROUP_LEADER", "그룹 관리 권한이 없습니다."),    
 
   // 만남 기록
   RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "RECORD_NOT_FOUND", "해당 차수 기록을 찾을 수 없습니다."),

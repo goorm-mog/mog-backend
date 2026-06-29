@@ -31,4 +31,8 @@ public class Group extends BaseTimeEntity {
         this.inviteCode = inviteCode;
         this.kakaoShareUrl = kakaoShareUrl;
     }
+
+    public void updateName(String groupName) {                  
+      this.groupName = groupName;             
+  }  
 }

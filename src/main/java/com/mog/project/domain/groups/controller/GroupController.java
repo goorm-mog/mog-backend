@@ -4,7 +4,9 @@ import com.mog.project.domain.groups.dto.request.GroupCreateRequest;
 import com.mog.project.domain.groups.dto.response.GroupCreateResponse;   
 import com.mog.project.domain.groups.dto.request.GroupJoinRequest;
 import com.mog.project.domain.groups.dto.response.GroupJoinResponse;   
-import com.mog.project.domain.groups.dto.response.GroupListResponse;                                                 
+import com.mog.project.domain.groups.dto.response.GroupListResponse;  
+import com.mog.project.domain.groups.dto.request.GroupUpdateRequest;  
+import com.mog.project.domain.groups.dto.response.GroupUpdateResponse;  
 import com.mog.project.domain.groups.service.GroupService;
 import com.mog.project.global.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;             
@@ -16,10 +18,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;                            
 import org.springframework.web.bind.annotation.PostMapping; 
-import org.springframework.web.bind.annotation.GetMapping; 
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PathVariable;
 
 
 @Tag(name = "Group", description = "그룹 API")
@@ -69,5 +73,21 @@ public class GroupController {
         ) {
             GroupListResponse response = groupService.getMyGroups(kakaoId);
             return ResponseEntity.ok(ApiResponse.success("GROUP_LIST_FETCH_SUCCESS", "참여 중인 그룹 목록을 성공적으로 조회했습니다.", response));
-        }
+    }
+
+    @Operation(
+        summary = "그룹 수정", 
+        description = "그룹 이름을 수정합니다. LEADER만 가능합니다.",
+        security = @SecurityRequirement(name = "bearerAuth"))
+    @PostMapping("/{groupId}")
+      public ResponseEntity<ApiResponse<GroupUpdateResponse>>
+      updateGroup(
+          @AuthenticationPrincipal String kakaoId,
+          @PathVariable Long groupId,
+          @Valid @RequestBody GroupUpdateRequest request
+        ) {
+            GroupUpdateResponse response = groupService.updateGroup(kakaoId, groupId, request);
+            return ResponseEntity.ok(ApiResponse.success("GROUP_UPDATE_SUCCESS", "그룹 이름이 성공적으로 변경되었습니다.", response));
+      }
+    
 }

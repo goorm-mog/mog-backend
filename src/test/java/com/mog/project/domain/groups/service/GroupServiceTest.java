@@ -7,8 +7,10 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 import com.mog.project.domain.groups.dto.request.GroupJoinRequest;
+import com.mog.project.domain.groups.dto.request.GroupUpdateRequest;
 import com.mog.project.domain.groups.dto.response.GroupJoinResponse;
 import com.mog.project.domain.groups.dto.response.GroupListResponse;
+import com.mog.project.domain.groups.dto.response.GroupUpdateResponse;
 import com.mog.project.domain.groups.entity.Group;
 import com.mog.project.domain.groups.entity.GroupMember;
 import com.mog.project.domain.groups.entity.GroupMemberRole;
@@ -134,6 +136,65 @@ class GroupServiceTest {
             .isInstanceOf(AuthException.class)
             .satisfies(e -> assertThat(((AuthException) e).getErrorCode())
                 .isEqualTo(ErrorCode.UNAUTHORIZED_USER));
+    }
+
+    // ---- 그룹 수정 ----
+
+    @Test
+    void LEADER가_그룹_이름을_수정에_성공한다() {
+        User user = user("kakao-123");
+        Group group = group("ABC123", "대학 친구들");
+        GroupMember leader = GroupMember.builder().group(group).user(user).role(GroupMemberRole.LEADER).build();
+
+        given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(user));
+        given(groupRepository.findById(1L)).willReturn(Optional.of(group));
+        given(groupMemberRepository.findByGroupGroupIdAndUserUserId(1L, user.getUserId())).willReturn(Optional.of(leader));
+
+        GroupUpdateResponse response = groupService.updateGroup("kakao-123", 1L, new GroupUpdateRequest("수정된 이름"));
+
+        assertThat(response.groupName()).isEqualTo("수정된 이름");
+    }
+
+    @Test
+    void MEMBER가_그룹_수정_시도하면_NOT_GROUP_LEADER_예외가_발생한다() {
+        User user = user("kakao-123");
+        Group group = group("ABC123", "대학 친구들");
+        GroupMember member = GroupMember.builder().group(group).user(user).role(GroupMemberRole.MEMBER).build();
+
+        given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(user));
+        given(groupRepository.findById(1L)).willReturn(Optional.of(group));
+        given(groupMemberRepository.findByGroupGroupIdAndUserUserId(1L, user.getUserId())).willReturn(Optional.of(member));
+
+        assertThatThrownBy(() -> groupService.updateGroup("kakao-123", 1L, new GroupUpdateRequest("수정된 이름")))
+            .isInstanceOf(GlobalException.class)
+            .satisfies(e -> assertThat(((GlobalException) e).getErrorCode())
+                .isEqualTo(ErrorCode.NOT_GROUP_LEADER));
+    }
+
+    @Test
+    void 그룹_수정_시_그룹멤버가_아니면_NOT_GROUP_MEMBER_예외가_발생한다() {
+        User user = user("kakao-123");
+        Group group = group("ABC123", "대학 친구들");
+
+        given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(user));
+        given(groupRepository.findById(1L)).willReturn(Optional.of(group));
+        given(groupMemberRepository.findByGroupGroupIdAndUserUserId(1L, user.getUserId())).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> groupService.updateGroup("kakao-123", 1L, new GroupUpdateRequest("수정된 이름")))
+            .isInstanceOf(GlobalException.class)
+            .satisfies(e -> assertThat(((GlobalException) e).getErrorCode())
+                .isEqualTo(ErrorCode.NOT_GROUP_MEMBER));
+    }
+
+    @Test
+    void 그룹_수정_시_존재하지_않는_그룹이면_GROUP_NOT_FOUND_예외가_발생한다() {
+        given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(user("kakao-123")));
+        given(groupRepository.findById(999L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> groupService.updateGroup("kakao-123", 999L, new GroupUpdateRequest("수정된 이름")))
+            .isInstanceOf(GlobalException.class)
+            .satisfies(e -> assertThat(((GlobalException) e).getErrorCode())
+                .isEqualTo(ErrorCode.GROUP_NOT_FOUND));
     }
 
     // ---- 헬퍼 ----

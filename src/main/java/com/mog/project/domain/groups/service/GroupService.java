@@ -5,6 +5,8 @@ import com.mog.project.domain.groups.dto.response.GroupCreateResponse;
 import com.mog.project.domain.groups.dto.request.GroupJoinRequest;
 import com.mog.project.domain.groups.dto.response.GroupJoinResponse;
 import com.mog.project.domain.groups.dto.response.GroupListResponse;
+import com.mog.project.domain.groups.dto.request.GroupUpdateRequest;
+import com.mog.project.domain.groups.dto.response.GroupUpdateResponse;
 import com.mog.project.domain.groups.entity.Group;
 import com.mog.project.domain.groups.entity.GroupMember;
 import com.mog.project.domain.groups.entity.GroupMemberRole;
@@ -126,4 +128,28 @@ public class GroupService {
 
         return new GroupListResponse(groups);
         }
+
+     @Transactional
+     public GroupUpdateResponse updateGroup(String kakaoId, Long groupId, GroupUpdateRequest request) {
+        User user = userRepository.findByKakaoId(kakaoId)
+          .orElseThrow(() -> new AuthException(ErrorCode.UNAUTHORIZED_USER));
+
+        Group group = groupRepository.findById(groupId)
+          .orElseThrow(() -> new GlobalException(ErrorCode.GROUP_NOT_FOUND));
+
+        GroupMember groupMember = groupMemberRepository.findByGroupGroupIdAndUserUserId(groupId, user.getUserId())
+          .orElseThrow(() -> new GlobalException(ErrorCode.NOT_GROUP_MEMBER));
+
+        if (groupMember.getRole() != GroupMemberRole.LEADER) {
+            throw new GlobalException(ErrorCode.NOT_GROUP_LEADER);
+        }
+
+        group.updateName(request.groupName());
+
+        return new GroupUpdateResponse(
+            group.getGroupId(),
+            group.getGroupName(),
+            group.getUpdatedAt()
+      );
+  }
 }
