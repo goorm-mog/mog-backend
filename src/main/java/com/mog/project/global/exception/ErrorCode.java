@@ -2,21 +2,24 @@ package com.mog.project.global.exception;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 
 @Getter
 @RequiredArgsConstructor
 public enum ErrorCode {
 
-    // 공통
-    INVALID_INPUT(400, "INVALID_INPUT", "입력값이 올바르지 않습니다."),
-    INTERNAL_SERVER_ERROR(500, "INTERNAL_SERVER_ERROR", "서버 오류가 발생했습니다."),
+    INVALID_KAKAO_TOKEN(HttpStatus.BAD_REQUEST, "INVALID_KAKAO_TOKEN", "유효하지 않은 카카오 토큰입니다."),
+    UNAUTHORIZED_USER(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED_USER", "인증되지 않은 사용자입니다."),
+    INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "INVALID_REFRESH_TOKEN", "유효하지 않은 Refresh Token입니다."),
+    REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "REFRESH_TOKEN_NOT_FOUND", "Refresh Token이 존재하지 않습니다."),
+    INVALID_INPUT(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "입력값이 올바르지 않습니다."),
+    INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다.");
 
-    // 인증/인가
-    UNAUTHORIZED(401, "UNAUTHORIZED", "인증이 필요합니다."),
-    FORBIDDEN(403, "FORBIDDEN", "접근 권한이 없습니다.");
-
-    private final int status;
+    private final HttpStatus httpStatus;
     private final String code;
     private final String message;
 
+    public int getStatus() {
+        return httpStatus.value();
+    }
 }
