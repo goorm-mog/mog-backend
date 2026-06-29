@@ -1,7 +1,9 @@
 package com.mog.project.domain.groups.controller;
                                                             
 import com.mog.project.domain.groups.dto.request.GroupCreateRequest;                                                    
-import com.mog.project.domain.groups.dto.response.GroupCreateResponse;                                                  
+import com.mog.project.domain.groups.dto.response.GroupCreateResponse;   
+import com.mog.project.domain.groups.dto.request.GroupJoinRequest;
+import com.mog.project.domain.groups.dto.response.GroupJoinResponse;                                                    
 import com.mog.project.domain.groups.service.GroupService;
 import com.mog.project.global.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;             
@@ -39,5 +41,18 @@ public class GroupController {
         GroupCreateResponse response = groupService.createGroup(kakaoId, request);
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(ApiResponse.success("GROUP_CREATE_SUCCESS", "그룹이 성공적으로 생성되었습니다", response));
+    }
+
+    @Operation(
+        summary = "그룹 참여", 
+        description = "초대 코드로 그룹에 참여합니다.",                                       
+        security = @SecurityRequirement(name = "bearerAuth"))
+    @PostMapping("/join")
+    public ResponseEntity<ApiResponse<GroupJoinResponse>> joinGroup(
+        @AuthenticationPrincipal String kakaoId,
+        @Valid @RequestBody GroupJoinRequest request
+    ) {
+        GroupJoinResponse response = groupService.joinGroup(kakaoId, request);
+        return ResponseEntity.ok(ApiResponse.success("GROUP_JOIN_SUCCESS", "그룹 참여에 성공했습니다.", response));
     }
 }

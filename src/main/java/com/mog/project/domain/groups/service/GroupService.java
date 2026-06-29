@@ -2,6 +2,8 @@ package com.mog.project.domain.groups.service;
 
 import com.mog.project.domain.groups.dto.request.GroupCreateRequest;
 import com.mog.project.domain.groups.dto.response.GroupCreateResponse;
+import com.mog.project.domain.groups.dto.request.GroupJoinRequest;
+import com.mog.project.domain.groups.dto.response.GroupJoinResponse;
 import com.mog.project.domain.groups.entity.Group;
 import com.mog.project.domain.groups.entity.GroupMember;
 import com.mog.project.domain.groups.entity.GroupMemberRole;
@@ -10,7 +12,10 @@ import com.mog.project.domain.groups.repository.GroupRepository;
 import com.mog.project.domain.user.entity.User;             
 import com.mog.project.domain.user.repository.UserRepository;      
 import com.mog.project.global.exception.AuthException;
-import com.mog.project.global.exception.ErrorCode;          
+import com.mog.project.global.exception.ErrorCode;
+import com.mog.project.global.exception.GlobalException;
+
+
 import java.security.SecureRandom;          
 import lombok.RequiredArgsConstructor;                      
 import org.springframework.stereotype.Service;
@@ -59,6 +64,33 @@ public class GroupService {
                 group.getKakaoShareUrl(),
                 group.getCreatedAt()
             );
+    }
+
+
+    @Transactional
+    public GroupJoinResponse joinGroup(String kakaoId, GroupJoinRequest request) {
+        User user = userRepository.findByKakaoId(kakaoId)
+            .orElseThrow(() -> new AuthException(ErrorCode.UNAUTHORIZED_USER));
+
+        Group group = groupRepository.findByInviteCode(request.inviteCode())
+            .orElseThrow(() -> new GlobalException(ErrorCode.GROUP_NOT_FOUND));
+
+        if (groupMemberRepository.existsByGroupGroupIdAndUserUserId(group.getGroupId(), user.getUserId())) {
+            throw new GlobalException(ErrorCode.ALREADY_JOINED_MEMBER);
+        }
+
+        GroupMember groupMember = GroupMember.builder()
+            .group(group)
+            .user(user)
+            .role(GroupMemberRole.MEMBER)
+            .build();
+        groupMemberRepository.save(groupMember);
+
+        return new GroupJoinResponse(
+            group.getGroupId(),
+            group.getGroupName(),
+            GroupMemberRole.MEMBER
+        );
     }
 
     // 초대 코드 생성 시 중복 방지를 위해 고유한 초대 코드를 생성하는 메서드
