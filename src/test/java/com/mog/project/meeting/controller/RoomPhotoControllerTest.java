@@ -1,7 +1,8 @@
 package com.mog.project.meeting.controller;
 
-import com.mog.project.meeting.dto.response.RoomPhotoResponse;
-import com.mog.project.meeting.service.RoomPhotoService;
+import com.mog.project.domain.meeting.controller.RoomPhotoController;
+import com.mog.project.domain.meeting.dto.response.RoomPhotoResponse;
+import com.mog.project.domain.meeting.service.RoomPhotoService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;

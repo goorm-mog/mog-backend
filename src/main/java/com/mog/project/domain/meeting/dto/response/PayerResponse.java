@@ -1,7 +1,6 @@
-package com.mog.project.meeting.dto.response;
+package com.mog.project.domain.meeting.dto.response;
 
-import com.mog.project.meeting.dto.request.PayerRequest;
-import com.mog.project.meeting.entity.MeetingRecord;
+import com.mog.project.domain.meeting.entity.MeetingRecord;
 
 public record PayerResponse(
 

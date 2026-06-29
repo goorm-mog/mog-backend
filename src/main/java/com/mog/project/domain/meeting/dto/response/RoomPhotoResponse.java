@@ -1,6 +1,6 @@
-package com.mog.project.meeting.dto.response;
+package com.mog.project.domain.meeting.dto.response;
 
-import com.mog.project.meeting.entity.RoomPhoto;
+import com.mog.project.domain.meeting.entity.RoomPhoto;
 
 import java.time.LocalDateTime;
 

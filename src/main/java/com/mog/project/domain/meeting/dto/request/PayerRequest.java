@@ -1,4 +1,4 @@
-package com.mog.project.meeting.dto.request;
+package com.mog.project.domain.meeting.dto.request;
 
 public record PayerRequest(
         // 결제자 방 멤버 ID

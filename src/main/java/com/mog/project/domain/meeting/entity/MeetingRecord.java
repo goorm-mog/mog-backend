@@ -1,4 +1,4 @@
-package com.mog.project.meeting.entity;
+package com.mog.project.domain.meeting.entity;
 
 import com.mog.project.global.config.AccountEncryptionConverter;
 import com.mog.project.global.entity.BaseEntity;

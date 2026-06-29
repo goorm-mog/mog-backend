@@ -1,9 +1,9 @@
-package com.mog.project.meeting.controller;
+package com.mog.project.domain.meeting.controller;
 
 
 import com.mog.project.global.response.ApiResponse;
-import com.mog.project.meeting.dto.response.RoomPhotoResponse;
-import com.mog.project.meeting.service.RoomPhotoService;
+import com.mog.project.domain.meeting.dto.response.RoomPhotoResponse;
+import com.mog.project.domain.meeting.service.RoomPhotoService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;

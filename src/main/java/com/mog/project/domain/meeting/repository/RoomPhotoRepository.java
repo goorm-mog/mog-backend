@@ -1,6 +1,6 @@
-package com.mog.project.meeting.repository;
+package com.mog.project.domain.meeting.repository;
 
-import com.mog.project.meeting.entity.RoomPhoto;
+import com.mog.project.domain.meeting.entity.RoomPhoto;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

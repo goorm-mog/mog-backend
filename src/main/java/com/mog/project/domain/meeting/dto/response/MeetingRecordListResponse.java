@@ -1,8 +1,8 @@
-package com.mog.project.meeting.dto.response;
+package com.mog.project.domain.meeting.dto.response;
 
 
-import com.mog.project.meeting.entity.MeetingMemberCost;
-import com.mog.project.meeting.entity.MeetingRecord;
+import com.mog.project.domain.meeting.entity.MeetingMemberCost;
+import com.mog.project.domain.meeting.entity.MeetingRecord;
 
 import java.util.List;
 import java.util.Map;

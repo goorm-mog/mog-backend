@@ -1,4 +1,4 @@
-package com.mog.project.meeting.dto.request;
+package com.mog.project.domain.meeting.dto.request;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;

@@ -1,7 +1,7 @@
-package com.mog.project.meeting.repository;
+package com.mog.project.domain.meeting.repository;
 
-import com.mog.project.meeting.entity.MeetingMemberCost;
-import com.mog.project.meeting.entity.MeetingRecord;
+import com.mog.project.domain.meeting.entity.MeetingMemberCost;
+import com.mog.project.domain.meeting.entity.MeetingRecord;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;

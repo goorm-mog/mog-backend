@@ -1,15 +1,16 @@
 package com.mog.project.meeting.service;
 
+import com.mog.project.domain.meeting.service.MeetingRecordService;
+import com.mog.project.domain.meeting.service.RoomPhotoService;
 import com.mog.project.global.exception.GlobalException;
-import com.mog.project.meeting.dto.request.MeetingRecordCreateRequest;
-import com.mog.project.meeting.dto.request.MeetingRecordUpdateRequest;
-import com.mog.project.meeting.dto.request.ParticipantRequest;
-import com.mog.project.meeting.dto.response.MeetingRecordListResponse;
-import com.mog.project.meeting.dto.response.MeetingRecordResponse;
-import com.mog.project.meeting.entity.MeetingMemberCost;
-import com.mog.project.meeting.entity.MeetingRecord;
-import com.mog.project.meeting.repository.MeetingMemberCostRepository;
-import com.mog.project.meeting.repository.MeetingRecordRepository;
+import com.mog.project.domain.meeting.dto.request.MeetingRecordCreateRequest;
+import com.mog.project.domain.meeting.dto.request.MeetingRecordUpdateRequest;
+import com.mog.project.domain.meeting.dto.request.ParticipantRequest;
+import com.mog.project.domain.meeting.dto.response.MeetingRecordListResponse;
+import com.mog.project.domain.meeting.dto.response.MeetingRecordResponse;
+import com.mog.project.domain.meeting.entity.MeetingRecord;
+import com.mog.project.domain.meeting.repository.MeetingMemberCostRepository;
+import com.mog.project.domain.meeting.repository.MeetingRecordRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,8 +32,10 @@ class MeetingRecordServiceTest {
 
     @Mock MeetingRecordRepository meetingRecordRepository;
     @Mock MeetingMemberCostRepository meetingMemberCostRepository;
-    @Mock RoomPhotoService roomPhotoService;
-    @InjectMocks MeetingRecordService meetingRecordService;
+    @Mock
+    RoomPhotoService roomPhotoService;
+    @InjectMocks
+    MeetingRecordService meetingRecordService;
 
     private MeetingRecord record;
 

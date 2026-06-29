@@ -1,11 +1,11 @@
-package com.mog.project.meeting.service;
+package com.mog.project.domain.meeting.service;
 
 import com.mog.project.global.config.S3Service;
 import com.mog.project.global.exception.ErrorCode;
 import com.mog.project.global.exception.GlobalException;
-import com.mog.project.meeting.dto.response.RoomPhotoResponse;
-import com.mog.project.meeting.entity.RoomPhoto;
-import com.mog.project.meeting.repository.RoomPhotoRepository;
+import com.mog.project.domain.meeting.dto.response.RoomPhotoResponse;
+import com.mog.project.domain.meeting.entity.RoomPhoto;
+import com.mog.project.domain.meeting.repository.RoomPhotoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

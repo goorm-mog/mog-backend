@@ -1,13 +1,14 @@
 package com.mog.project.meeting.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mog.project.meeting.dto.request.MeetingRecordCreateRequest;
-import com.mog.project.meeting.dto.request.MeetingRecordUpdateRequest;
-import com.mog.project.meeting.dto.request.ParticipantRequest;
-import com.mog.project.meeting.dto.response.MeetingRecordListResponse;
-import com.mog.project.meeting.dto.response.MeetingRecordResponse;
-import com.mog.project.meeting.dto.response.ParticipantResponse;
-import com.mog.project.meeting.service.MeetingRecordService;
+import com.mog.project.domain.meeting.controller.MeetingRecordController;
+import com.mog.project.domain.meeting.dto.request.MeetingRecordCreateRequest;
+import com.mog.project.domain.meeting.dto.request.MeetingRecordUpdateRequest;
+import com.mog.project.domain.meeting.dto.request.ParticipantRequest;
+import com.mog.project.domain.meeting.dto.response.MeetingRecordListResponse;
+import com.mog.project.domain.meeting.dto.response.MeetingRecordResponse;
+import com.mog.project.domain.meeting.dto.response.ParticipantResponse;
+import com.mog.project.domain.meeting.service.MeetingRecordService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;

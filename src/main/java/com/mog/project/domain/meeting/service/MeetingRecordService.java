@@ -1,17 +1,17 @@
-package com.mog.project.meeting.service;
+package com.mog.project.domain.meeting.service;
 
 import com.mog.project.global.exception.ErrorCode;
 import com.mog.project.global.exception.GlobalException;
-import com.mog.project.meeting.dto.request.MeetingRecordCreateRequest;
-import com.mog.project.meeting.dto.request.MeetingRecordUpdateRequest;
-import com.mog.project.meeting.dto.response.MeetingRecordListResponse;
-import com.mog.project.meeting.dto.response.MeetingRecordResponse;
-import com.mog.project.meeting.dto.response.RoomPhotoResponse;
-import com.mog.project.meeting.entity.MeetingMemberCost;
-import com.mog.project.meeting.entity.MeetingRecord;
+import com.mog.project.domain.meeting.dto.request.MeetingRecordCreateRequest;
+import com.mog.project.domain.meeting.dto.request.MeetingRecordUpdateRequest;
+import com.mog.project.domain.meeting.dto.response.MeetingRecordListResponse;
+import com.mog.project.domain.meeting.dto.response.MeetingRecordResponse;
+import com.mog.project.domain.meeting.dto.response.RoomPhotoResponse;
+import com.mog.project.domain.meeting.entity.MeetingMemberCost;
+import com.mog.project.domain.meeting.entity.MeetingRecord;
 
-import com.mog.project.meeting.repository.MeetingMemberCostRepository;
-import com.mog.project.meeting.repository.MeetingRecordRepository;
+import com.mog.project.domain.meeting.repository.MeetingMemberCostRepository;
+import com.mog.project.domain.meeting.repository.MeetingRecordRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

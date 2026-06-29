@@ -1,11 +1,11 @@
-package com.mog.project.meeting.controller;
+package com.mog.project.domain.meeting.controller;
 
 import com.mog.project.global.response.ApiResponse;
-import com.mog.project.meeting.dto.request.MeetingRecordCreateRequest;
-import com.mog.project.meeting.dto.request.MeetingRecordUpdateRequest;
-import com.mog.project.meeting.dto.response.MeetingRecordListResponse;
-import com.mog.project.meeting.dto.response.MeetingRecordResponse;
-import com.mog.project.meeting.service.MeetingRecordService;
+import com.mog.project.domain.meeting.dto.request.MeetingRecordCreateRequest;
+import com.mog.project.domain.meeting.dto.request.MeetingRecordUpdateRequest;
+import com.mog.project.domain.meeting.dto.response.MeetingRecordListResponse;
+import com.mog.project.domain.meeting.dto.response.MeetingRecordResponse;
+import com.mog.project.domain.meeting.service.MeetingRecordService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
