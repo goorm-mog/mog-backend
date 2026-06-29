@@ -1,7 +1,7 @@
 spring:
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/moge_db
+    url: jdbc:postgresql://localhost:5432/mog_db
     username:         # 로컬 DB 유저명
     password:         # 로컬 DB 비밀번호
 
