@@ -2,6 +2,8 @@ package com.mog.project.domain.meeting.dto.response;
 
 import com.mog.project.domain.meeting.entity.MeetingRecord;
 
+import java.util.Map;
+
 public record PayerResponse(
 
         // 결제자 방 멤버 ID
@@ -16,12 +18,12 @@ public record PayerResponse(
         // 계좌번호
         String accountNumber
 ) {
-    public static PayerResponse from(MeetingRecord record) {
+    public static PayerResponse from(MeetingRecord record, Map<Long, String> nicknameMap) {
         if (record.getPayerRoomMemberId() == null) return null;
 
         return new PayerResponse(
                 record.getPayerRoomMemberId(),
-                "멤버" + record.getPayerRoomMemberId(),
+                nicknameMap.get(record.getPayerRoomMemberId()),
                 record.getPayerBankName(),
                 record.getPayerAccountNumber()
         );

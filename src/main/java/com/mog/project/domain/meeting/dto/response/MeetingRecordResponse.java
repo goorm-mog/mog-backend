@@ -5,6 +5,7 @@ import com.mog.project.domain.meeting.entity.MeetingRecord;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 public record MeetingRecordResponse (
         // 차수 기록 ID
@@ -30,11 +31,11 @@ public record MeetingRecordResponse (
         // 생성 일시
         LocalDateTime createdAt
 ) {
-    public static MeetingRecordResponse from(MeetingRecord record, List<MeetingMemberCost> costs) {
+    public static MeetingRecordResponse from(MeetingRecord record, List<MeetingMemberCost> costs, Map<Long, String> nicknameMap) {
 
         // costs를 ParticipantResponse의 형태로 형변환
         List<ParticipantResponse> participants = costs.stream()
-                .map(ParticipantResponse::from)
+                .map(cost -> ParticipantResponse.from(cost, nicknameMap))
                 .toList();
 
         // totalCost, 각각의 비용을 합산
@@ -48,7 +49,7 @@ public record MeetingRecordResponse (
                 record.getPlaceName(),
                 record.getMemo(),
                 totalCost,
-                PayerResponse.from(record),
+                PayerResponse.from(record, nicknameMap),
                 participants,
                 record.getCreatedAt()
         );

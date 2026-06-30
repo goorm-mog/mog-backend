@@ -15,7 +15,8 @@ public record MeetingRecordListResponse(
     public static MeetingRecordListResponse from(
             List<RoomPhotoResponse> photos,
             List<MeetingRecord> records,
-            List<MeetingMemberCost> allCosts // 모든 차수의 MeetingMemberCost를 한 번에 조회
+            List<MeetingMemberCost> allCosts,
+            Map<Long, String> nicknameMap
     ) {
         // MeetingMemberCost를 meetingRecordId를 기준으로 그룹
         // 각 차수별로 해당하는 cost를 찾기 위해 Map으로 변환
@@ -25,7 +26,8 @@ public record MeetingRecordListResponse(
         List<MeetingRecordResponse> recordResponses = records.stream()
                 .map(record -> MeetingRecordResponse.from(
                         record,
-                        costsByRecordId.getOrDefault(record.getId(), List.of())
+                        costsByRecordId.getOrDefault(record.getId(), List.of()),
+                        nicknameMap
                 ))
                 .toList();
 

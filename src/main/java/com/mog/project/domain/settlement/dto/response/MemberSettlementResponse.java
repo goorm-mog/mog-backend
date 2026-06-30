@@ -13,13 +13,12 @@ public record MemberSettlementResponse(
 ) {
     public static MemberSettlementResponse from(
             MemberSettlement memberSettlement,
+            String nickname,
             List<SettlementDetailResponse> detail
     ) {
-        Long roomMemberId = memberSettlement.getRoomMemberId();
-
         return new MemberSettlementResponse(
-                roomMemberId,
-                "멤버" + roomMemberId,
+                memberSettlement.getRoomMemberId(),
+                nickname,
                 memberSettlement.getTotalAmount(),
                 detail
         );

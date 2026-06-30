@@ -1,7 +1,8 @@
 package com.mog.project.domain.groups.repository;
 
 import com.mog.project.domain.groups.entity.GroupMember;
-import org.springframework.data.jpa.repository.JpaRepository;                                            
+import com.mog.project.domain.user.entity.User;
+import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,4 +22,6 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long>
 
     // 그룹 상세
     List<GroupMember> findByGroupGroupId(Long groupId);
+
+    Long user(User user);
 }

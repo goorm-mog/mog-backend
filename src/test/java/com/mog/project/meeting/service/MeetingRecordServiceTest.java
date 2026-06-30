@@ -1,7 +1,12 @@
 package com.mog.project.meeting.service;
 
+import com.mog.project.domain.groups.entity.GroupMember;
+import com.mog.project.domain.groups.repository.GroupMemberRepository;
 import com.mog.project.domain.meeting.service.MeetingRecordService;
 import com.mog.project.domain.meeting.service.RoomPhotoService;
+import com.mog.project.domain.room.entity.Room;
+import com.mog.project.domain.room.repository.RoomRepository;
+import com.mog.project.domain.groups.entity.Group;
 import com.mog.project.global.exception.GlobalException;
 import com.mog.project.domain.meeting.dto.request.MeetingRecordCreateRequest;
 import com.mog.project.domain.meeting.dto.request.MeetingRecordUpdateRequest;
@@ -32,10 +37,10 @@ class MeetingRecordServiceTest {
 
     @Mock MeetingRecordRepository meetingRecordRepository;
     @Mock MeetingMemberCostRepository meetingMemberCostRepository;
-    @Mock
-    RoomPhotoService roomPhotoService;
-    @InjectMocks
-    MeetingRecordService meetingRecordService;
+    @Mock RoomPhotoService roomPhotoService;
+    @Mock RoomRepository roomRepository;
+    @Mock GroupMemberRepository groupMemberRepository;
+    @InjectMocks MeetingRecordService meetingRecordService;
 
     private MeetingRecord record;
 
@@ -44,6 +49,15 @@ class MeetingRecordServiceTest {
         record = MeetingRecord.builder()
                 .roomId(1L).seq(1).placeName("강남").memo("첫 만남").build();
         ReflectionTestUtils.setField(record, "id", 1L);
+
+        // buildNicknameMap() 호출 시 NPE 방지용 공통 mock 설정
+        // lenient: deleteRecord 등 buildNicknameMap을 호출하지 않는 테스트에서 불필요한 stub 경고 방지
+        Room mockRoom = mock(Room.class);
+        Group mockGroup = mock(Group.class);
+        lenient().when(mockRoom.getGroup()).thenReturn(mockGroup);
+        lenient().when(mockGroup.getGroupId()).thenReturn(1L);
+        lenient().when(roomRepository.findById(1L)).thenReturn(Optional.of(mockRoom));
+        lenient().when(groupMemberRepository.findByGroupGroupId(1L)).thenReturn(List.of());
     }
 
     // ── getRecords ──────────────────────────────────────────────────────────

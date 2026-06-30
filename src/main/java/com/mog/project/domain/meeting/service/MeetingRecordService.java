@@ -9,14 +9,19 @@ import com.mog.project.domain.meeting.dto.response.MeetingRecordResponse;
 import com.mog.project.domain.meeting.dto.response.RoomPhotoResponse;
 import com.mog.project.domain.meeting.entity.MeetingMemberCost;
 import com.mog.project.domain.meeting.entity.MeetingRecord;
-
 import com.mog.project.domain.meeting.repository.MeetingMemberCostRepository;
 import com.mog.project.domain.meeting.repository.MeetingRecordRepository;
+import com.mog.project.domain.groups.entity.GroupMember;
+import com.mog.project.domain.groups.repository.GroupMemberRepository;
+import com.mog.project.domain.room.entity.Room;
+import com.mog.project.domain.room.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -26,6 +31,8 @@ public class MeetingRecordService {
     private final MeetingRecordRepository meetingRecordRepository;
     private final MeetingMemberCostRepository meetingMemberCostRepository;
     private final RoomPhotoService roomPhotoService;
+    private final RoomRepository roomRepository;
+    private final GroupMemberRepository groupMemberRepository;
 
     // 해당 방의 전체 차수 기록 + 사진 조회
     public MeetingRecordListResponse getRecords(Long roomId) {
@@ -38,8 +45,10 @@ public class MeetingRecordService {
 
         List<RoomPhotoResponse> photos = roomPhotoService.getPhotos(roomId);
 
+        Map<Long, String> nicknameMap = buildNicknameMap(roomId);
+
         // response DTO에 담아서 조회 결과를 제공
-        return MeetingRecordListResponse.from(photos, records, allCosts);
+        return MeetingRecordListResponse.from(photos, records, allCosts, nicknameMap);
     }
 
     // 새 차수 추가
@@ -73,7 +82,8 @@ public class MeetingRecordService {
         meetingMemberCostRepository.saveAll(costs);
 
         // 저장된 엔티티를 응답 DTO로 변환
-        return MeetingRecordResponse.from(record, costs);
+        Map<Long, String> nicknameMap = buildNicknameMap(roomId);
+        return MeetingRecordResponse.from(record, costs, nicknameMap);
     }
 
     // 특정 차수 수정
@@ -109,7 +119,8 @@ public class MeetingRecordService {
             costs = meetingMemberCostRepository.findByMeetingRecordIn(List.of(record));
         }
 
-        return MeetingRecordResponse.from(record, costs);
+        Map<Long, String> nicknameMap = buildNicknameMap(roomId);
+        return MeetingRecordResponse.from(record, costs, nicknameMap);
     }
 
     // 특정 차수 삭제
@@ -129,5 +140,16 @@ public class MeetingRecordService {
 
         // 삭제된 차수들을 -1만큼씩 땡김
         meetingRecordRepository.decreaseSeqAfter(roomId, seq);
+    }
+
+    private Map<Long, String> buildNicknameMap(Long roomId) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new GlobalException(ErrorCode.ROOM_NOT_FOUND));
+        Long groupId = room.getGroup().getGroupId();
+        return groupMemberRepository.findByGroupGroupId(groupId).stream()
+                .collect(Collectors.toMap(
+                        GroupMember::getGroupMemberId,
+                        gm -> gm.getUser().getNickname()
+                ));
     }
 }
