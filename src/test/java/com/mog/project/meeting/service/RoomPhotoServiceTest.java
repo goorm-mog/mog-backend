@@ -1,10 +1,11 @@
 package com.mog.project.meeting.service;
 
+import com.mog.project.domain.meeting.service.RoomPhotoService;
 import com.mog.project.global.config.S3Service;
 import com.mog.project.global.exception.GlobalException;
-import com.mog.project.meeting.dto.response.RoomPhotoResponse;
-import com.mog.project.meeting.entity.RoomPhoto;
-import com.mog.project.meeting.repository.RoomPhotoRepository;
+import com.mog.project.domain.meeting.dto.response.RoomPhotoResponse;
+import com.mog.project.domain.meeting.entity.RoomPhoto;
+import com.mog.project.domain.meeting.repository.RoomPhotoRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,7 +25,8 @@ class RoomPhotoServiceTest {
 
     @Mock RoomPhotoRepository roomPhotoRepository;
     @Mock S3Service s3Service;
-    @InjectMocks RoomPhotoService roomPhotoService;
+    @InjectMocks
+    RoomPhotoService roomPhotoService;
 
     private MockMultipartFile validJpeg() {
         return new MockMultipartFile("image", "test.jpg", "image/jpeg", new byte[100]);
