@@ -16,6 +16,7 @@ import com.mog.project.domain.settlement.entity.MemberSettlement;
 import com.mog.project.domain.settlement.entity.Settlement;
 import com.mog.project.domain.settlement.repository.MemberSettlementRepository;
 import com.mog.project.domain.settlement.repository.SettlementRepository;
+import com.mog.project.domain.user.entity.User;
 import com.mog.project.domain.user.repository.UserRepository;
 import com.mog.project.global.exception.ErrorCode;
 import com.mog.project.global.exception.GlobalException;
@@ -43,17 +44,20 @@ public class SettlementService {
     // 정산 계산 및 생성
     // 방 멤버라면 누구나 호출이 되고, 이미 존재하면 삭제 후 재생성
     @Transactional
-    public SettlementResponse calculateAndCreate(Long roomId, Long userId) {
-
+    public SettlementResponse calculateAndCreate(Long roomId, String kakaoId) {
 
         // 방을 우선 조회 (없으면 ROOM_NOT_FOUND 반환)
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new GlobalException(ErrorCode.ROOM_NOT_FOUND));
 
+        // kakaoId로 User 조회 후 userId 추출
+        User user = userRepository.findByKakaoId(kakaoId)
+                .orElseThrow(() -> new GlobalException(ErrorCode.FORBIDDEN));
+
         // 현재 유저의 groupMemberId를 조회
-        // Room -> Group -> GroupMEmber로 조회
+        // Room -> Group -> GroupMember로 조회
         Long groupId = room.getGroup().getGroupId();
-        GroupMember currentMember = groupMemberRepository.findByGroupGroupIdAndUserUserId(groupId, userId)
+        GroupMember currentMember = groupMemberRepository.findByGroupGroupIdAndUserUserId(groupId, user.getUserId())
                 .orElseThrow(() -> new GlobalException(ErrorCode.FORBIDDEN));
 
         // 해당 방의 모든 차수 기록을 조회
@@ -124,7 +128,7 @@ public class SettlementService {
     // 정산 확정
     // 방장만 가능
     @Transactional
-    public SettlementResponse confirmSettlement(Long roomId, Long userId) {
+    public SettlementResponse confirmSettlement(Long roomId, String kakaoId) {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new GlobalException(ErrorCode.ROOM_NOT_FOUND));
 
@@ -135,10 +139,14 @@ public class SettlementService {
             throw new GlobalException(ErrorCode.ALREADY_CONFIRMED);
         }
 
+        // kakaoId로 User 조회 후 userId 추출
+        User user = userRepository.findByKakaoId(kakaoId)
+                .orElseThrow(() -> new GlobalException(ErrorCode.FORBIDDEN));
+
         Long groupId = room.getGroup().getGroupId();
 
         GroupMember currentMember = groupMemberRepository
-                .findByGroupGroupIdAndUserUserId(groupId, userId)
+                .findByGroupGroupIdAndUserUserId(groupId, user.getUserId())
                 .orElseThrow(() -> new GlobalException(ErrorCode.FORBIDDEN));
 
         if (currentMember.getRole() != GroupMemberRole.LEADER) {
