@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
  
 @Tag(name = "일정 조율", description = "모임 일정 투표 및 확정 API")
@@ -28,9 +29,9 @@ public class ScheduleController {
     @PostMapping("/slots")
     public ResponseEntity<SlotListResponse> createSlots(
             @PathVariable Long roomId,
-            @RequestParam Long userId,       // TODO: 로그인 구현 후 @AuthenticationPrincipal로 교체
+            @AuthenticationPrincipal String kakaoId,
             @RequestBody SlotCreateRequest request) {
-        return ResponseEntity.ok(scheduleService.createSlots(roomId, userId, request));
+        return ResponseEntity.ok(scheduleService.createSlots(roomId, kakaoId, request));
     }
  
     // ──────────────────────────────────────────
@@ -50,9 +51,9 @@ public class ScheduleController {
     @PostMapping("/votes")
     public ResponseEntity<VoteResponse> vote(
             @PathVariable Long roomId,
-            @RequestParam Long userId,       // TODO: 로그인 구현 후 @AuthenticationPrincipal로 교체
+            @AuthenticationPrincipal String kakaoId,
             @RequestBody VoteRequest request) {
-        return ResponseEntity.ok(scheduleService.vote(roomId, userId, request));
+        return ResponseEntity.ok(scheduleService.vote(roomId, kakaoId, request));
     }
  
     // ──────────────────────────────────────────
@@ -62,9 +63,9 @@ public class ScheduleController {
     @PatchMapping("/confirm")
     public ResponseEntity<ConfirmedScheduleResponse> confirm(
             @PathVariable Long roomId,
-            @RequestParam Long userId,       // TODO: 로그인 구현 후 @AuthenticationPrincipal로 교체
+            @AuthenticationPrincipal String kakaoId,
             @RequestBody ScheduleConfirmRequest request) {
-        return ResponseEntity.ok(scheduleService.confirm(roomId, userId, request));
+        return ResponseEntity.ok(scheduleService.confirm(roomId, kakaoId, request));
     }
  
     // ──────────────────────────────────────────
@@ -77,4 +78,3 @@ public class ScheduleController {
         return ResponseEntity.ok(scheduleService.getConfirmedSchedule(roomId));
     }
 }
- 

@@ -12,6 +12,8 @@ import com.mog.project.domain.schedule.entity.ScheduleVote;
 import com.mog.project.domain.schedule.repository.ConfirmedScheduleRepository;
 import com.mog.project.domain.schedule.repository.ScheduleSlotRepository;
 import com.mog.project.domain.schedule.repository.ScheduleVoteRepository;
+import com.mog.project.domain.user.entity.User;
+import com.mog.project.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,12 +29,21 @@ public class ScheduleService {
     private final ScheduleVoteRepository scheduleVoteRepository;
     private final ConfirmedScheduleRepository confirmedScheduleRepository;
     private final ScheduleWebSocketPublisher scheduleWebSocketPublisher;
+    private final UserRepository userRepository;
+ 
+    // kakaoId → userId 변환 공통 메서드
+    private Long getUserId(String kakaoId) {
+        return userRepository.findByKakaoId(kakaoId)
+                .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."))
+                .getUserId();
+    }
  
     // ──────────────────────────────────────────
     // 1. 슬롯 등록 (방장)
     // ──────────────────────────────────────────
     @Transactional
-    public SlotListResponse createSlots(Long roomId, Long userId, SlotCreateRequest request) {
+    public SlotListResponse createSlots(Long roomId, String kakaoId, SlotCreateRequest request) {
+        Long userId = getUserId(kakaoId);
         scheduleSlotRepository.deleteAllByRoomId(roomId);
  
         List<ScheduleSlot> slots = request.slots().stream()
@@ -60,13 +71,13 @@ public class ScheduleService {
     // 3. 투표 등록 / 취소 (토글) + WS 브로드캐스트
     // ──────────────────────────────────────────
     @Transactional
-    public VoteResponse vote(Long roomId, Long userId, VoteRequest request) {
+    public VoteResponse vote(Long roomId, String kakaoId, VoteRequest request) {
+        Long userId = getUserId(kakaoId);
+ 
         for (Long slotId : request.slotIds()) {
             if (scheduleVoteRepository.existsBySlotIdAndUserId(slotId, userId)) {
-                // 이미 투표한 슬롯 → 취소
                 scheduleVoteRepository.deleteBySlotIdAndUserId(slotId, userId);
             } else {
-                // 투표 안 한 슬롯 → 등록
                 scheduleVoteRepository.save(
                         ScheduleVote.builder()
                                 .slotId(slotId)
@@ -77,14 +88,12 @@ public class ScheduleService {
             }
         }
  
-        // 현재 유저의 투표된 슬롯 ID 목록
         List<Long> votedSlotIds = scheduleVoteRepository
                 .findAllByRoomIdAndUserId(roomId, userId)
                 .stream()
                 .map(ScheduleVote::getSlotId)
                 .toList();
  
-        // 전체 투표 현황 WS 브로드캐스트
         SlotListResponse slotListResponse = getSlots(roomId);
         scheduleWebSocketPublisher.publishVoteUpdate(roomId, slotListResponse);
  
@@ -95,15 +104,15 @@ public class ScheduleService {
     // 4. 일정 확정 (방장) - upsert + WS 브로드캐스트
     // ──────────────────────────────────────────
     @Transactional
-    public ConfirmedScheduleResponse confirm(Long roomId, Long userId, ScheduleConfirmRequest request) {
+    public ConfirmedScheduleResponse confirm(Long roomId, String kakaoId, ScheduleConfirmRequest request) {
+        Long userId = getUserId(kakaoId);
+ 
         ConfirmedSchedule confirmed = confirmedScheduleRepository.findByRoomId(roomId)
                 .map(existing -> {
-                    // 이미 확정된 경우 → 덮어쓰기
                     existing.update(request.date(), request.time());
                     return existing;
                 })
                 .orElseGet(() ->
-                        // 처음 확정하는 경우 → 새로 저장
                         confirmedScheduleRepository.save(
                                 ConfirmedSchedule.builder()
                                         .roomId(roomId)
@@ -119,8 +128,6 @@ public class ScheduleService {
         // confirmed.updateKakaoEventId(eventId);
  
         ConfirmedScheduleResponse response = ConfirmedScheduleResponse.from(confirmed);
- 
-        // 확정 일정 WS 브로드캐스트
         scheduleWebSocketPublisher.publishConfirm(roomId, response);
  
         return response;
