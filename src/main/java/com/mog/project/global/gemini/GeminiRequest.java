@@ -1,5 +1,7 @@
 package com.mog.project.global.gemini;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 import java.util.List;
 
 public record GeminiRequest(
@@ -10,6 +12,7 @@ public record GeminiRequest(
     public record Content(List<Part> parts) {}
 
     // 이미지 파트와 텍스트 파트 중 하나만 값이 들어감
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     public record Part(String text, InlineData inlineData) {
         public static Part ofText(String text) {
             return new Part(text, null);
