@@ -13,6 +13,12 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.mog.project.domain.meeting.dto.response.OcrResponse;
+import com.mog.project.domain.meeting.service.OcrService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.RequestPart;
+import org.springframework.web.multipart.MultipartFile;
 
 @Tag(name = "만남 기록", description = "만남 기록 생성 / 조회 / 수정 / 삭제 API")
 @RestController
@@ -21,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 public class MeetingRecordController {
 
     private final MeetingRecordService meetingRecordService;
+    private final OcrService ocrService;
 
     @Operation(
             summary = "만남 기록 목록 조회",
@@ -86,5 +93,28 @@ public class MeetingRecordController {
     ) {
         meetingRecordService.deleteRecord(roomId, recordId);
         return ResponseEntity.ok(ApiResponse.success("만남 기록을 삭제했습니다."));
+    }
+
+    // POST /api/v1/rooms/{roomId}/records/ocr
+    // 영수증 이미지를 받아 Gemini로 분석 후 가게명, 금액, 메뉴를 반환
+    @Operation(
+            summary = "영수증 OCR",
+            description = "영수증 이미지를 업로드하면 Gemini AI가 분석하여 정보를 추출합니다.\n\n" +
+                    "- 지원 형식: jpg, jpeg, png, gif, webp\n" +
+                    "- 최대 크기: 10MB\n" +
+                    "- `storeName`: 가게명 (인식 불가 시 null)\n" +
+                    "- `totalAmount`: 총 금액 (인식 불가 시 0)\n" +
+                    "- `items[].count`: 수량 (영수증에 없으면 null)",
+            security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @PostMapping(value = "/ocr", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<ApiResponse<OcrResponse>> analyzeReceipt(
+            @Parameter(description = "방 ID", example = "1")
+            @PathVariable Long roomId,
+
+            @Parameter(description = "영수증 이미지 파일 (jpa, png, gif, webp / 최대 10MB)")
+            @RequestPart("image") MultipartFile image
+    ) {
+        return ResponseEntity.ok(ApiResponse.success("영수증 분석이 완료되었습니다.", ocrService.analyzeReceipt(image)));
     }
 }
