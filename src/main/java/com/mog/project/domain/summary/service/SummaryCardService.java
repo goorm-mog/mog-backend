@@ -1,4 +1,4 @@
-package com.mog.project.domain.summary;
+package com.mog.project.domain.summary.service;
 
 import com.mog.project.domain.groups.entity.GroupMember;
 import com.mog.project.domain.groups.repository.GroupMemberRepository;
