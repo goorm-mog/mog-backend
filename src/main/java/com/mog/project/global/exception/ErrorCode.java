@@ -38,6 +38,7 @@ public enum ErrorCode {
   SETTLEMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "SETTLEMENT_NOT_FOUND", "정산 내역이 없습니다."),
   ALREADY_CONFIRMED(HttpStatus.BAD_REQUEST, "ALREADY_CONFIRMED", "이미 확정된 정산입니다."),
   NOT_HOST(HttpStatus.FORBIDDEN, "NOT_HOST", "방장만 정산을 확정할 수 있습니다."),
+  SETTLEMENT_NOT_CONFIRMED(HttpStatus.CONFLICT, "SETTLEMENT_NOT_CONFIRMED", "정산이 확정되지 않았습니다."),
 
   // 방
   ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "ROOM_NOT_FOUND", "존재하지 않는 방입니다."),
