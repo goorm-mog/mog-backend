@@ -1,4 +1,4 @@
-package com.mog.project.domain.summary;
+package com.mog.project.domain.summary.controller;
 
 import com.mog.project.domain.summary.dto.response.CardImageResponse;
 import com.mog.project.domain.summary.dto.response.SummaryCardResponse;
