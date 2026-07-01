@@ -9,35 +9,49 @@ import org.springframework.http.HttpStatus;
 public enum ErrorCode {
 
   // 공통
-  INVALID_INPUT(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "입력값이 올바르지 않습니다."),  
+  INVALID_INPUT(HttpStatus.BAD_REQUEST, "INVALID_INPUT", "입력값이 올바르지 않습니다."),
   INTERNAL_SERVER_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR", "서버 내부 오류가 발생했습니다."),
-  
-  
+
+
   // 인증 인가
   UNAUTHORIZED_USER(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED_USER", "인증되지 않은 사용자입니다."),
-  FORBIDDEN(HttpStatus.FORBIDDEN, "FORBIDDEN", "접근 권한이 없습니다."),  
+  FORBIDDEN(HttpStatus.FORBIDDEN, "FORBIDDEN", "접근 권한이 없습니다."),
   INVALID_KAKAO_TOKEN(HttpStatus.BAD_REQUEST, "INVALID_KAKAO_TOKEN", "유효하지 않은 카카오 토큰입니다."),
   INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "INVALID_REFRESH_TOKEN", "유효하지 않은 Refresh Token입니다."),
   REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "REFRESH_TOKEN_NOT_FOUND", "Refresh Token이 존재하지 않습니다."),
-    
-  // 만남 기록                                                                  
-  RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "RECORD_NOT_FOUND", "해당 차수 기록을 찾을 수 없습니다."),                                                              
-  INVALID_MEMBER(HttpStatus.BAD_REQUEST, "INVALID_MEMBER", "방 멤버가 아닌 참여자가 포함되어 있습니다."),                                                    
+
+  // 그룹
+  INVALID_GROUP_NAME(HttpStatus.BAD_REQUEST, "INVALID_GROUP_NAME", "그룹 이름은 1자 이상 20자 이하이어야 합니다."),
+  GROUP_NOT_FOUND(HttpStatus.NOT_FOUND, "GROUP_NOT_FOUND", "그룹을 찾을 수 없습니다."),
+  ALREADY_JOINED_MEMBER(HttpStatus.CONFLICT, "ALREADY_JOINED_MEMBER", "이미 해당 그룹에 가입된 멤버입니다."),
+  NOT_GROUP_MEMBER(HttpStatus.FORBIDDEN, "NOT_GROUP_MEMBER", "해당 그룹의 멤버가 아닙니다."),                            
+  NOT_GROUP_LEADER(HttpStatus.FORBIDDEN, "NOT_GROUP_LEADER", "그룹 관리 권한이 없습니다."),
+  LEADER_CANNOT_LEAVE(HttpStatus.BAD_REQUEST, "LEADER_CANNOT_LEAVE", "그룹장은 그룹을 바로 탈퇴할 수 없습니다. 삭제를 이용해주세요."),    
+
+  // 만남 기록
+  RECORD_NOT_FOUND(HttpStatus.NOT_FOUND, "RECORD_NOT_FOUND", "해당 차수 기록을 찾을 수 없습니다."),
+  INVALID_MEMBER(HttpStatus.BAD_REQUEST, "INVALID_MEMBER", "방 멤버가 아닌 참여자가 포함되어 있습니다."),
   INVALID_PAYER(HttpStatus.BAD_REQUEST, "INVALID_PAYER", "결제자가 방 멤버가 아닙니다."),
-  
-  // 방                                                                         
-  ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "ROOM_NOT_FOUND", "존재하지 않는 방입니다."),                                                                      
-   
-  // 사진                                                                       
-  PHOTO_NOT_FOUND(HttpStatus.NOT_FOUND, "PHOTO_NOT_FOUND", "존재하지 않는 사진입니다."),                                                                    
-  PHOTO_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "PHOTO_LIMIT_EXCEEDED", "사진은 최대 3장까지 업로드할 수 있습니다."),                                             
-  INVALID_IMAGE(HttpStatus.BAD_REQUEST, "INVALID_IMAGE", "지원하지 않는 이미지 형식입니다."),                                                                    
-  IMAGE_TOO_LARGE(HttpStatus.BAD_REQUEST, "IMAGE_TOO_LARGE", "이미지 크기를 초과했습니다."),                                                                  
-                     
-  // OCR                                                                        
-  OCR_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "OCR_FAILED", "영수증을 인식할 수 없습니다."),                                                                      
+
+  // 정산
+  NO_RECORDS(HttpStatus.BAD_REQUEST, "NO_RECORDS", "기록된 차수가 없습니다."),
+  SETTLEMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "SETTLEMENT_NOT_FOUND", "정산 내역이 없습니다."),
+  ALREADY_CONFIRMED(HttpStatus.BAD_REQUEST, "ALREADY_CONFIRMED", "이미 확정된 정산입니다."),
+  NOT_HOST(HttpStatus.FORBIDDEN, "NOT_HOST", "방장만 정산을 확정할 수 있습니다."),
+
+  // 방
+  ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "ROOM_NOT_FOUND", "존재하지 않는 방입니다."),
+
+  // 사진
+  PHOTO_NOT_FOUND(HttpStatus.NOT_FOUND, "PHOTO_NOT_FOUND", "존재하지 않는 사진입니다."),
+  PHOTO_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "PHOTO_LIMIT_EXCEEDED", "사진은 최대 3장까지 업로드할 수 있습니다."),
+  INVALID_IMAGE(HttpStatus.BAD_REQUEST, "INVALID_IMAGE", "지원하지 않는 이미지 형식입니다."),
+  IMAGE_TOO_LARGE(HttpStatus.BAD_REQUEST, "IMAGE_TOO_LARGE", "이미지 크기를 초과했습니다."),
+
+  // OCR
+  OCR_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "OCR_FAILED", "영수증을 인식할 수 없습니다."),
   OCR_SERVICE_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "OCR_SERVICE_ERROR", "OCR 서비스에 일시적인 오류가 발생했습니다.");
-  
+
   private final HttpStatus httpStatus;
   private final String code;
   private final String message;
