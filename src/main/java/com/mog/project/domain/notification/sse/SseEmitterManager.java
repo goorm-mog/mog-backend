@@ -1,8 +1,8 @@
 package com.mog.project.domain.notification.sse;
 
+import com.mog.project.global.redis.RedisPublisher;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -18,8 +18,8 @@ public class SseEmitterManager {
     // 현재 SSE 연결 중인 유저를 저장
     private final Map<Long, SseEmitter> emitters = new ConcurrentHashMap<>();
 
-    // Redis에 메시지를 발행하는 템플릿
-    private final StringRedisTemplate redisTemplate;
+    // RedisPublisher를 이용
+    private final RedisPublisher redisPublisher;
 
     // 채널 이름
     private static final String CHANNEL_PREFIX = "notification:";
@@ -53,7 +53,7 @@ public class SseEmitterManager {
 
     // 알림 발생 시 호출: Redis 채널에 메시지를 발행
     public void publish(Long userId, String payload) {
-        redisTemplate.convertAndSend(CHANNEL_PREFIX + userId, payload);
+        redisPublisher.publish(CHANNEL_PREFIX + userId, payload);
     }
 
     // Redis Subscriber 메시지를 받으면 메서드를 호출
