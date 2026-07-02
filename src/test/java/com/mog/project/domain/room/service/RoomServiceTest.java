@@ -14,9 +14,13 @@ import com.mog.project.domain.groups.repository.GroupRepository;
 import com.mog.project.domain.room.dto.request.RoomCreateRequest;
 import com.mog.project.domain.room.dto.response.RoomCreateResponse;
 import com.mog.project.domain.room.dto.response.RoomListResponse;
+import com.mog.project.domain.room.dto.response.RoomStatusResponse;
 import com.mog.project.domain.room.entity.Room;
+import com.mog.project.domain.room.entity.RoomMember;
 import com.mog.project.domain.room.entity.RoomStatus;
+import com.mog.project.domain.room.repository.RoomMemberRepository;
 import com.mog.project.domain.room.repository.RoomRepository;
+import com.mog.project.domain.meeting.repository.MeetingRecordRepository;
 import com.mog.project.domain.user.entity.User;
 import com.mog.project.domain.user.repository.UserRepository;
 import com.mog.project.global.exception.AuthException;
@@ -37,12 +41,14 @@ class RoomServiceTest {
     @Mock private GroupRepository groupRepository;
     @Mock private GroupMemberRepository groupMemberRepository;
     @Mock private UserRepository userRepository;
+    @Mock private RoomMemberRepository roomMemberRepository;
+    @Mock private MeetingRecordRepository meetingRecordRepository;
 
     private RoomService roomService;
 
     @BeforeEach
     void setUp() {
-        roomService = new RoomService(roomRepository, groupRepository, groupMemberRepository, userRepository);
+        roomService = new RoomService(roomRepository, groupRepository, groupMemberRepository, userRepository, roomMemberRepository, meetingRecordRepository);
     }
 
     // ---- 방 생성 ----
@@ -144,6 +150,41 @@ class RoomServiceTest {
                 .isEqualTo(ErrorCode.NOT_GROUP_MEMBER));
     }
 
+    // ---- 방 상태 및 멤버 현황 조회 ----
+
+    @Test
+    void 방_상태_및_멤버_현황_조회에_성공한다() {
+        Group group = group("ABC123", "대학 친구들");
+        User user1 = user("kakao-123");
+        User user2 = user("kakao-456");
+        Room room = room(group, user1, "강남역 삼겹살 모임", RoomStatus.RECORDING);
+        RoomMember member1 = roomMember(room, user1, true);
+        RoomMember member2 = roomMember(room, user2, false);
+
+        given(roomRepository.findById(1L)).willReturn(Optional.of(room));
+        given(meetingRecordRepository.findMaxSeqByRoomId(1L)).willReturn(2);
+        given(roomMemberRepository.findByRoomRoomId(1L)).willReturn(List.of(member1, member2));
+
+        RoomStatusResponse response = roomService.getRoomStatus(1L);
+
+        assertThat(response.roomName()).isEqualTo("강남역 삼겹살 모임");
+        assertThat(response.status()).isEqualTo(RoomStatus.RECORDING);
+        assertThat(response.currentStep()).isEqualTo(2);
+        assertThat(response.members()).hasSize(2);
+        assertThat(response.members().get(0).isJoined()).isTrue();
+        assertThat(response.members().get(1).isJoined()).isFalse();
+    }
+
+    @Test
+    void 존재하지_않는_방이면_ROOM_NOT_FOUND_예외가_발생한다() {
+        given(roomRepository.findById(999L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> roomService.getRoomStatus(999L))
+            .isInstanceOf(GlobalException.class)
+            .satisfies(e -> assertThat(((GlobalException) e).getErrorCode())
+                .isEqualTo(ErrorCode.ROOM_NOT_FOUND));
+    }
+
     // ---- 헬퍼 ----
 
     private User user(String kakaoId) {
@@ -169,6 +210,14 @@ class RoomServiceTest {
             .creator(creator)
             .roomName(roomName)
             .status(status)
+            .build();
+    }
+
+    private RoomMember roomMember(Room room, User user, boolean isJoined) {
+        return RoomMember.builder()
+            .room(room)
+            .user(user)
+            .isJoined(isJoined)
             .build();
     }
 }

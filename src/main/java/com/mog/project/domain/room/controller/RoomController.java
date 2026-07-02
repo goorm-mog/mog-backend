@@ -3,6 +3,7 @@ package com.mog.project.domain.room.controller;
 import com.mog.project.domain.room.dto.request.RoomCreateRequest;
 import com.mog.project.domain.room.dto.response.RoomCreateResponse;
 import com.mog.project.domain.room.dto.response.RoomListResponse;
+import com.mog.project.domain.room.dto.response.RoomStatusResponse;
 import com.mog.project.domain.room.service.RoomService;
 import com.mog.project.global.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -58,6 +59,22 @@ public class RoomController {
         RoomListResponse response = roomService.getRoomList(kakaoId, groupId);
         return ResponseEntity.ok(
             ApiResponse.success("ROOM_LIST_FETCH_SUCCESS", "그룹 내 약속 방 목록을 성공적으로 조회했습니다.", response)
+        );
+    }
+
+    @Operation(
+        summary = "방 상태 및 멤버 현황 조회",
+        description = "방의 진행 상태와 멤버 참여 현황을 조회합니다.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @GetMapping("/rooms/{roomId}")
+    public ResponseEntity<ApiResponse<RoomStatusResponse>> getRoomStatus(
+        @AuthenticationPrincipal String kakaoId,
+        @PathVariable Long roomId
+    ) {
+        RoomStatusResponse response = roomService.getRoomStatus(roomId);
+        return ResponseEntity.ok(
+            ApiResponse.success("ROOM_STATUS_FETCH_SUCCESS", "방 상태 및 멤버 현황을 성공적으로 조회했습니다.", response)
         );
     }
 }
