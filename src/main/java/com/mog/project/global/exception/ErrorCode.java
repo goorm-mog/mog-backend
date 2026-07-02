@@ -51,7 +51,11 @@ public enum ErrorCode {
 
   // OCR
   OCR_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "OCR_FAILED", "영수증을 인식할 수 없습니다."),
-  OCR_SERVICE_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "OCR_SERVICE_ERROR", "OCR 서비스에 일시적인 오류가 발생했습니다.");
+  OCR_SERVICE_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "OCR_SERVICE_ERROR", "OCR 서비스에 일시적인 오류가 발생했습니다."),
+
+  // 알림
+  NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIFICATION_NOT_FOUND", "존재하지 않는 알림입니다.");
+
 
   private final HttpStatus httpStatus;
   private final String code;
