@@ -1,9 +1,11 @@
 package com.mog.project.domain.room.controller;
 
 import com.mog.project.domain.room.dto.request.RoomCreateRequest;
+import com.mog.project.domain.room.dto.request.RoomStepRequest;
 import com.mog.project.domain.room.dto.response.RoomCreateResponse;
 import com.mog.project.domain.room.dto.response.RoomListResponse;
 import com.mog.project.domain.room.dto.response.RoomStatusResponse;
+import com.mog.project.domain.room.dto.response.RoomStepResponse;
 import com.mog.project.domain.room.service.RoomService;
 import com.mog.project.global.common.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
@@ -15,6 +17,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -25,7 +28,6 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/v1/groups")
 @RequiredArgsConstructor
-
 public class RoomController {
 
     private final RoomService roomService;
@@ -75,6 +77,23 @@ public class RoomController {
         RoomStatusResponse response = roomService.getRoomStatus(roomId);
         return ResponseEntity.ok(
             ApiResponse.success("ROOM_STATUS_FETCH_SUCCESS", "방 상태 및 멤버 현황을 성공적으로 조회했습니다.", response)
+        );
+    }
+
+    @Operation(
+        summary = "방 단계 진행",
+        description = "방장이 방의 진행 단계를 다음 단계로 전환합니다.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @PatchMapping("/rooms/{roomId}/step")
+    public ResponseEntity<ApiResponse<RoomStepResponse>> updateRoomStep(
+        @AuthenticationPrincipal String kakaoId,
+        @PathVariable Long roomId,
+        @Valid @RequestBody RoomStepRequest request
+    ) {
+        RoomStepResponse response = roomService.updateRoomStep(kakaoId, roomId, request);
+        return ResponseEntity.ok(
+            ApiResponse.success("ROOM_STEP_PROGRESS_SUCCESS", "방 단계가 다음 단계로 전환되었습니다.", response)
         );
     }
 }

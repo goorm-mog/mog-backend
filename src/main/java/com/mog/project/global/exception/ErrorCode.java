@@ -41,6 +41,7 @@ public enum ErrorCode {
 
   // 방
   ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "ROOM_NOT_FOUND", "존재하지 않는 방입니다."),
+  NOT_ROOM_LEADER(HttpStatus.FORBIDDEN, "NOT_ROOM_LEADER", "방장만 단계를 변경할 수 있습니다."),
 
   // 사진
   PHOTO_NOT_FOUND(HttpStatus.NOT_FOUND, "PHOTO_NOT_FOUND", "존재하지 않는 사진입니다."),

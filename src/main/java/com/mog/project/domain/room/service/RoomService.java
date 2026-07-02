@@ -5,9 +5,11 @@ import com.mog.project.domain.groups.repository.GroupMemberRepository;
 import com.mog.project.domain.groups.repository.GroupRepository;
 import com.mog.project.domain.meeting.repository.MeetingRecordRepository;
 import com.mog.project.domain.room.dto.request.RoomCreateRequest;
+import com.mog.project.domain.room.dto.request.RoomStepRequest;
 import com.mog.project.domain.room.dto.response.RoomCreateResponse;
 import com.mog.project.domain.room.dto.response.RoomListResponse;
 import com.mog.project.domain.room.dto.response.RoomStatusResponse;
+import com.mog.project.domain.room.dto.response.RoomStepResponse;
 import com.mog.project.domain.room.entity.Room;
 import com.mog.project.domain.room.entity.RoomStatus;
 import com.mog.project.domain.room.repository.RoomMemberRepository;
@@ -21,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -105,6 +108,29 @@ public class RoomService {
          room.getStatus(),
          currentStep,
          members
+      );
+   }
+
+   @Transactional
+   public RoomStepResponse updateRoomStep(String kakaoId, Long roomId, RoomStepRequest request) {
+      User user = userRepository.findByKakaoId(kakaoId)
+         .orElseThrow(() -> new AuthException(ErrorCode.UNAUTHORIZED_USER));
+
+      Room room = roomRepository.findById(roomId)
+         .filter(r -> r.getDeletedAt() == null)
+         .orElseThrow(() -> new GlobalException(ErrorCode.ROOM_NOT_FOUND));
+
+      if (!Objects.equals(room.getCreator().getUserId(), user.getUserId())) {
+         throw new GlobalException(ErrorCode.NOT_ROOM_LEADER);
+      }
+
+      room.updateStatus(request.nextStatus());
+      roomRepository.saveAndFlush(room);
+
+      return new RoomStepResponse(
+         room.getRoomId(),
+         room.getStatus(),
+         room.getUpdatedAt()
       );
    }
 }

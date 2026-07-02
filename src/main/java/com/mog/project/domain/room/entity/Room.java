@@ -45,4 +45,8 @@ public class Room extends BaseTimeEntity {
         this.status = status;
         this.promiseDate = promiseDate;
     }
+
+    public void updateStatus(RoomStatus status) {
+        this.status = status;
+    }
 }

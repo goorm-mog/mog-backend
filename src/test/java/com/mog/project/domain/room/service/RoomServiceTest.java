@@ -12,9 +12,11 @@ import com.mog.project.domain.groups.entity.GroupMemberRole;
 import com.mog.project.domain.groups.repository.GroupMemberRepository;
 import com.mog.project.domain.groups.repository.GroupRepository;
 import com.mog.project.domain.room.dto.request.RoomCreateRequest;
+import com.mog.project.domain.room.dto.request.RoomStepRequest;
 import com.mog.project.domain.room.dto.response.RoomCreateResponse;
 import com.mog.project.domain.room.dto.response.RoomListResponse;
 import com.mog.project.domain.room.dto.response.RoomStatusResponse;
+import com.mog.project.domain.room.dto.response.RoomStepResponse;
 import com.mog.project.domain.room.entity.Room;
 import com.mog.project.domain.room.entity.RoomMember;
 import com.mog.project.domain.room.entity.RoomStatus;
@@ -33,6 +35,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class RoomServiceTest {
@@ -183,6 +186,64 @@ class RoomServiceTest {
             .isInstanceOf(GlobalException.class)
             .satisfies(e -> assertThat(((GlobalException) e).getErrorCode())
                 .isEqualTo(ErrorCode.ROOM_NOT_FOUND));
+    }
+
+    // ---- 방 단계 진행 ----
+
+    @Test
+    void 방장이_방_단계를_변경하면_성공한다() {
+        User leader = user("kakao-123");
+        ReflectionTestUtils.setField(leader, "userId", 1L);
+        Group group = group("ABC123", "대학 친구들");
+        Room room = room(group, leader, "강남역 삼겹살 모임", RoomStatus.VOTING);
+
+        given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(leader));
+        given(roomRepository.findById(1L)).willReturn(Optional.of(room));
+        given(roomRepository.saveAndFlush(room)).willReturn(room);
+
+        RoomStepResponse response = roomService.updateRoomStep("kakao-123", 1L, new RoomStepRequest(RoomStatus.RECORDING));
+
+        assertThat(response.currentStatus()).isEqualTo(RoomStatus.RECORDING);
+        assertThat(room.getStatus()).isEqualTo(RoomStatus.RECORDING);
+    }
+
+    @Test
+    void 방장이_아니면_NOT_ROOM_LEADER_예외가_발생한다() {
+        User leader = user("kakao-123");
+        ReflectionTestUtils.setField(leader, "userId", 1L);
+        User other = user("kakao-456");
+        ReflectionTestUtils.setField(other, "userId", 2L);
+        Group group = group("ABC123", "대학 친구들");
+        Room room = room(group, leader, "강남역 삼겹살 모임", RoomStatus.VOTING);
+
+        given(userRepository.findByKakaoId("kakao-456")).willReturn(Optional.of(other));
+        given(roomRepository.findById(1L)).willReturn(Optional.of(room));
+
+        assertThatThrownBy(() -> roomService.updateRoomStep("kakao-456", 1L, new RoomStepRequest(RoomStatus.RECORDING)))
+            .isInstanceOf(GlobalException.class)
+            .satisfies(e -> assertThat(((GlobalException) e).getErrorCode())
+                .isEqualTo(ErrorCode.NOT_ROOM_LEADER));
+    }
+
+    @Test
+    void 단계_변경시_존재하지_않는_방이면_ROOM_NOT_FOUND_예외가_발생한다() {
+        given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(user("kakao-123")));
+        given(roomRepository.findById(999L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> roomService.updateRoomStep("kakao-123", 999L, new RoomStepRequest(RoomStatus.RECORDING)))
+            .isInstanceOf(GlobalException.class)
+            .satisfies(e -> assertThat(((GlobalException) e).getErrorCode())
+                .isEqualTo(ErrorCode.ROOM_NOT_FOUND));
+    }
+
+    @Test
+    void 단계_변경시_인증되지_않은_유저면_UNAUTHORIZED_USER_예외가_발생한다() {
+        given(userRepository.findByKakaoId("unknown")).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> roomService.updateRoomStep("unknown", 1L, new RoomStepRequest(RoomStatus.RECORDING)))
+            .isInstanceOf(AuthException.class)
+            .satisfies(e -> assertThat(((AuthException) e).getErrorCode())
+                .isEqualTo(ErrorCode.UNAUTHORIZED_USER));
     }
 
     // ---- 헬퍼 ----
