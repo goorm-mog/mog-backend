@@ -5,6 +5,7 @@ import com.mog.project.domain.groups.repository.GroupMemberRepository;
 import com.mog.project.domain.groups.repository.GroupRepository;
 import com.mog.project.domain.room.dto.request.RoomCreateRequest;
 import com.mog.project.domain.room.dto.response.RoomCreateResponse;
+import com.mog.project.domain.room.dto.response.RoomListResponse;
 import com.mog.project.domain.room.entity.Room;
 import com.mog.project.domain.room.entity.RoomStatus;
 import com.mog.project.domain.room.repository.RoomRepository;
@@ -16,6 +17,7 @@ import com.mog.project.global.exception.GlobalException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -53,5 +55,26 @@ public class RoomService {
               user.getUserId(),
               room.getCreatedAt()
            );
+   }
+
+   @Transactional(readOnly = true)
+   public RoomListResponse getRoomList(String kakaoId, Long groupId) {
+      User user = userRepository.findByKakaoId(kakaoId)
+         .orElseThrow(() -> new AuthException(ErrorCode.UNAUTHORIZED_USER));
+      
+      groupMemberRepository.findByGroupGroupIdAndUserUserId(groupId, user.getUserId())
+         .orElseThrow(() -> new GlobalException(ErrorCode.NOT_GROUP_MEMBER));
+      
+      List<RoomListResponse.RoomInfo> rooms = roomRepository.findByGroupGroupIdAndDeletedAtIsNull(groupId)
+          .stream()
+          .map(room -> new RoomListResponse.RoomInfo(
+            room.getRoomId(),
+            room.getRoomName(),
+            room.getStatus(),
+            room.getCreatedAt()
+          ))
+          .toList();
+
+      return new RoomListResponse(rooms);
    }
 }
