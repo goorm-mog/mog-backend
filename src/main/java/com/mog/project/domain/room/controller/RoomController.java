@@ -2,6 +2,7 @@ package com.mog.project.domain.room.controller;
 
 import com.mog.project.domain.room.dto.request.RoomCreateRequest;
 import com.mog.project.domain.room.dto.request.RoomStepRequest;
+import com.mog.project.domain.room.dto.response.RoomCloseResponse;
 import com.mog.project.domain.room.dto.response.RoomCreateResponse;
 import com.mog.project.domain.room.dto.response.RoomListResponse;
 import com.mog.project.domain.room.dto.response.RoomStatusResponse;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -94,6 +96,22 @@ public class RoomController {
         RoomStepResponse response = roomService.updateRoomStep(kakaoId, roomId, request);
         return ResponseEntity.ok(
             ApiResponse.success("ROOM_STEP_PROGRESS_SUCCESS", "방 단계가 다음 단계로 전환되었습니다.", response)
+        );
+    }
+
+    @Operation(
+        summary = "방 종료",
+        description = "방장이 방을 완료 및 종료(소프트 삭제) 처리합니다.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @DeleteMapping("/rooms/{roomId}")
+    public ResponseEntity<ApiResponse<RoomCloseResponse>> closeRoom(
+        @AuthenticationPrincipal String kakaoId,
+        @PathVariable Long roomId
+    ) {
+        RoomCloseResponse response = roomService.closeRoom(kakaoId, roomId);
+        return ResponseEntity.ok(
+            ApiResponse.success("ROOM_CLOSE_SUCCESS", "방이 완료 및 종료 처리(소프트 삭제) 되었습니다.", response)
         );
     }
 }

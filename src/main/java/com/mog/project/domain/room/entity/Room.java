@@ -49,4 +49,9 @@ public class Room extends BaseTimeEntity {
     public void updateStatus(RoomStatus status) {
         this.status = status;
     }
+
+    public void close() {
+        this.status = RoomStatus.COMPLETED;
+        this.deletedAt = LocalDateTime.now();
+    }
 }
