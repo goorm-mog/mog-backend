@@ -6,6 +6,7 @@ public enum NotificationType
     ROOM_CREATED, // 방 생성
     DATE_CONFIRMED, // 날짜 확정
     PLACE_CONFIRMED, // 장소 확정
+    RECORD_ADDED, // 만남 추가
     SETTLEMENT_DONE, // 정산 확정
     SUMMARY_READY // 요약 카드 생성
 }
