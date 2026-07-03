@@ -36,4 +36,3 @@ public record DepartureLocationListResponse(
         return new DepartureLocationListResponse(roomId, items.size(), items);
     }
 }
- 
