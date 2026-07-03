@@ -1,5 +1,6 @@
 package com.mog.project.global.config;
 
+import com.mog.project.domain.notification.sse.NotificationRedisSubscriber;
 import com.mog.project.global.redis.RedisSubscriber;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -48,10 +49,13 @@ public class RedisConfig {
     @Bean
     public RedisMessageListenerContainer redisMessageListenerContainer(
             RedisConnectionFactory factory,
-            RedisSubscriber subscriber) {
+            RedisSubscriber subscriber,
+            NotificationRedisSubscriber notificationRedisSubscriber
+            ) {
         RedisMessageListenerContainer container = new RedisMessageListenerContainer();
         container.setConnectionFactory(factory);
         container.addMessageListener(subscriber, new PatternTopic("room:*:events"));
+        container.addMessageListener(notificationRedisSubscriber, new PatternTopic("notification:*"));
         return container;
     }
 }

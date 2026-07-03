@@ -1,5 +1,7 @@
 package com.mog.project.domain.meeting.service;
 
+import com.mog.project.domain.notification.entity.NotificationType;
+import com.mog.project.domain.notification.service.NotificationService;
 import com.mog.project.global.exception.ErrorCode;
 import com.mog.project.global.exception.GlobalException;
 import com.mog.project.domain.meeting.dto.request.MeetingRecordCreateRequest;
@@ -33,6 +35,7 @@ public class MeetingRecordService {
     private final RoomPhotoService roomPhotoService;
     private final RoomRepository roomRepository;
     private final GroupMemberRepository groupMemberRepository;
+    private final NotificationService notificationService;
 
     // 해당 방의 전체 차수 기록 + 사진 조회
     public MeetingRecordListResponse getRecords(Long roomId) {
@@ -83,6 +86,10 @@ public class MeetingRecordService {
 
         // 저장된 엔티티를 응답 DTO로 변환
         Map<Long, String> nicknameMap = buildNicknameMap(roomId);
+
+        // 방 멤버 전체에게 알림을 전송
+        notifyRoomMembers(roomId, nextSeq);
+
         return MeetingRecordResponse.from(record, costs, nicknameMap);
     }
 
@@ -152,4 +159,19 @@ public class MeetingRecordService {
                         gm -> gm.getUser().getNickname()
                 ));
     }
+
+    // 알림 발송 메서드
+    private void notifyRoomMembers(Long roomId, int seq) {
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new GlobalException(ErrorCode.ROOM_NOT_FOUND));
+        String message = "[" + room.getRoomName() + "]" + seq + "차 기록이 추가됐습니다.";
+        groupMemberRepository.findByGroupGroupId(room.getGroup().getGroupId())
+                .forEach(gm -> notificationService.send(
+                        gm.getUser().getUserId(),
+                        NotificationType.RECORD_ADDED,
+                        message,
+                        roomId
+                ));
+    }
+
 }
