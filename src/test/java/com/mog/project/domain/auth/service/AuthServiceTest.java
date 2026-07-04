@@ -18,6 +18,7 @@ import com.mog.project.domain.user.entity.User;
 import com.mog.project.domain.user.repository.UserRepository;
 import com.mog.project.global.auth.jwt.JwtProvider;
 import com.mog.project.global.auth.oauth2.client.KakaoApiClient;
+import com.mog.project.global.auth.oauth2.client.KakaoOAuthClient;
 import com.mog.project.global.auth.oauth2.dto.KakaoUserInfoResponse;
 import com.mog.project.global.exception.AuthException;
 import com.mog.project.global.exception.ErrorCode;
@@ -40,6 +41,7 @@ class AuthServiceTest {
     private static final long REFRESH_EXPIRY = 604800000L;
 
     @Mock private KakaoApiClient kakaoApiClient;
+    @Mock private KakaoOAuthClient kakaoOAuthClient;
     @Mock private UserRepository userRepository;
     @Mock private StringRedisTemplate redisTemplate;
     @Mock private ValueOperations<String, String> valueOperations;
@@ -50,7 +52,7 @@ class AuthServiceTest {
     @BeforeEach
     void setUp() {
         jwtProvider = new JwtProvider(SECRET, ACCESS_EXPIRY, REFRESH_EXPIRY);
-        authService = new AuthService(kakaoApiClient, userRepository, jwtProvider, redisTemplate);
+        authService = new AuthService(kakaoApiClient, kakaoOAuthClient, userRepository, jwtProvider, redisTemplate);
         lenient().when(redisTemplate.opsForValue()).thenReturn(valueOperations);
     }
 
@@ -110,7 +112,7 @@ class AuthServiceTest {
         String rt = shortExpiry.generateRefreshToken("42");
         given(valueOperations.get("RT:42")).willReturn(rt);
 
-        AuthService svc = new AuthService(kakaoApiClient, userRepository, shortExpiry, redisTemplate);
+        AuthService svc = new AuthService(kakaoApiClient, kakaoOAuthClient, userRepository, shortExpiry, redisTemplate);
         AccessTokenReissueResponse result = svc.reissue(rt, new MockHttpServletResponse());
 
         assertThat(result.accessToken()).isNotBlank();

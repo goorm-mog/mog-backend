@@ -9,6 +9,7 @@ import com.mog.project.domain.meeting.dto.response.MeetingRecordListResponse;
 import com.mog.project.domain.meeting.dto.response.MeetingRecordResponse;
 import com.mog.project.domain.meeting.dto.response.ParticipantResponse;
 import com.mog.project.domain.meeting.service.MeetingRecordService;
+import com.mog.project.domain.meeting.service.OcrService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -35,6 +36,7 @@ class MeetingRecordControllerTest {
     @Autowired MockMvc mockMvc;
     @Autowired ObjectMapper objectMapper;
     @MockBean MeetingRecordService meetingRecordService;
+    @MockBean OcrService ocrService;
 
     private MeetingRecordResponse sampleResponse() {
         return new MeetingRecordResponse(

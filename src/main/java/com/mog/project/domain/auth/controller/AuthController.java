@@ -1,5 +1,6 @@
 package com.mog.project.domain.auth.controller;
 
+import com.mog.project.domain.auth.dto.request.KakaoCodeLoginRequest;
 import com.mog.project.domain.auth.dto.request.KakaoLoginRequest;
 import com.mog.project.domain.auth.dto.response.AccessTokenReissueResponse;
 import com.mog.project.domain.auth.dto.response.AuthLoginResponse;
@@ -45,6 +46,30 @@ public class AuthController {
         HttpServletResponse response
     ) {
         AuthLoginResponse loginResponse = authService.kakaoLogin(request, response);
+        return ResponseEntity.ok(ApiResponse.success(
+            "AUTH_LOGIN_SUCCESS",
+            "카카오 로그인에 성공하여 토큰이 발급되었습니다.",
+            loginResponse
+        ));
+    }
+
+    @Operation(
+        summary = "카카오 로그인 (인가코드)",
+        description = "카카오 인가코드(code)로 카카오 accessToken을 서버에서 교환한 뒤 자체 JWT를 발급합니다. Refresh Token은 HttpOnly Cookie로 설정됩니다.",
+        security = {}
+    )
+    @ApiResponses({
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "로그인 성공",
+            content = @Content(schema = @Schema(implementation = AuthLoginResponse.class))),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "400", description = "유효하지 않은 카카오 토큰"),
+        @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "401", description = "카카오 서버 통신 실패")
+    })
+    @PostMapping("/login/kakao/code")
+    public ResponseEntity<ApiResponse<AuthLoginResponse>> kakaoLoginWithCode(
+        @RequestBody KakaoCodeLoginRequest request,
+        HttpServletResponse response
+    ) {
+        AuthLoginResponse loginResponse = authService.kakaoLoginWithCode(request.code(), response);
         return ResponseEntity.ok(ApiResponse.success(
             "AUTH_LOGIN_SUCCESS",
             "카카오 로그인에 성공하여 토큰이 발급되었습니다.",

@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+
 @Tag(name = "약속 사진", description = "약속 사진 업로드 / 삭제 API")
 @RestController
 @RequestMapping("/api/v1/rooms/{roomId}/photos")

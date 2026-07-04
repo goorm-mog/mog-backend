@@ -7,6 +7,7 @@ import com.mog.project.domain.user.entity.User;
 import com.mog.project.domain.user.repository.UserRepository;
 import com.mog.project.global.auth.jwt.JwtProvider;
 import com.mog.project.global.auth.oauth2.client.KakaoApiClient;
+import com.mog.project.global.auth.oauth2.client.KakaoOAuthClient;
 import com.mog.project.global.auth.oauth2.dto.KakaoUserInfoResponse;
 import com.mog.project.global.exception.AuthException;
 import com.mog.project.global.exception.ErrorCode;
@@ -29,6 +30,7 @@ public class AuthService {
     private static final String COOKIE_PATH = "/api/v1/auth";
 
     private final KakaoApiClient kakaoApiClient;
+    private final KakaoOAuthClient kakaoOAuthClient;
     private final UserRepository userRepository;
     private final JwtProvider jwtProvider;
     private final StringRedisTemplate redisTemplate;
@@ -38,7 +40,17 @@ public class AuthService {
 
     @Transactional
     public AuthLoginResponse kakaoLogin(KakaoLoginRequest request, HttpServletResponse response) {
-        KakaoUserInfoResponse kakaoUser = kakaoApiClient.getUserInfo(request.accessToken());
+        return processKakaoLogin(request.accessToken(), response);
+    }
+
+    @Transactional
+    public AuthLoginResponse kakaoLoginWithCode(String code, HttpServletResponse response) {
+        String kakaoAccessToken = kakaoOAuthClient.exchangeCodeForAccessToken(code);
+        return processKakaoLogin(kakaoAccessToken, response);
+    }
+
+    private AuthLoginResponse processKakaoLogin(String kakaoAccessToken, HttpServletResponse response) {
+        KakaoUserInfoResponse kakaoUser = kakaoApiClient.getUserInfo(kakaoAccessToken);
         String kakaoId = String.valueOf(kakaoUser.id());
 
         User user = userRepository.findByKakaoId(kakaoId)

@@ -38,9 +38,12 @@ public enum ErrorCode {
   SETTLEMENT_NOT_FOUND(HttpStatus.NOT_FOUND, "SETTLEMENT_NOT_FOUND", "정산 내역이 없습니다."),
   ALREADY_CONFIRMED(HttpStatus.BAD_REQUEST, "ALREADY_CONFIRMED", "이미 확정된 정산입니다."),
   NOT_HOST(HttpStatus.FORBIDDEN, "NOT_HOST", "방장만 정산을 확정할 수 있습니다."),
+  SETTLEMENT_NOT_CONFIRMED(HttpStatus.CONFLICT, "SETTLEMENT_NOT_CONFIRMED", "정산이 확정되지 않았습니다."),
 
   // 방
   ROOM_NOT_FOUND(HttpStatus.NOT_FOUND, "ROOM_NOT_FOUND", "존재하지 않는 방입니다."),
+  NOT_ROOM_LEADER(HttpStatus.FORBIDDEN, "NOT_ROOM_LEADER", "방장만 단계를 변경할 수 있습니다."),
+  NOT_ROOM_MEMBER(HttpStatus.FORBIDDEN, "NOT_ROOM_MEMBER", "해당 방의 멤버가 아닙니다."),
 
   // 사진
   PHOTO_NOT_FOUND(HttpStatus.NOT_FOUND, "PHOTO_NOT_FOUND", "존재하지 않는 사진입니다."),
@@ -50,7 +53,11 @@ public enum ErrorCode {
 
   // OCR
   OCR_FAILED(HttpStatus.UNPROCESSABLE_ENTITY, "OCR_FAILED", "영수증을 인식할 수 없습니다."),
-  OCR_SERVICE_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "OCR_SERVICE_ERROR", "OCR 서비스에 일시적인 오류가 발생했습니다.");
+  OCR_SERVICE_ERROR(HttpStatus.SERVICE_UNAVAILABLE, "OCR_SERVICE_ERROR", "OCR 서비스에 일시적인 오류가 발생했습니다."),
+
+  // 알림
+  NOTIFICATION_NOT_FOUND(HttpStatus.NOT_FOUND, "NOTIFICATION_NOT_FOUND", "존재하지 않는 알림입니다.");
+
 
   private final HttpStatus httpStatus;
   private final String code;

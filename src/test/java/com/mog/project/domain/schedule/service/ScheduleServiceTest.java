@@ -1,4 +1,4 @@
-package com.mog.project.meeting.service;
+package com.mog.project.domain.schedule.service;
 
 import com.mog.project.domain.schedule.dto.ScheduleConfirmRequest;
 import com.mog.project.domain.schedule.dto.SlotCreateRequest;
@@ -12,14 +12,15 @@ import com.mog.project.domain.schedule.entity.ScheduleVote;
 import com.mog.project.domain.schedule.repository.ConfirmedScheduleRepository;
 import com.mog.project.domain.schedule.repository.ScheduleSlotRepository;
 import com.mog.project.domain.schedule.repository.ScheduleVoteRepository;
-import com.mog.project.domain.schedule.service.ScheduleService;
-import com.mog.project.domain.schedule.service.ScheduleWebSocketPublisher;
+import com.mog.project.domain.user.entity.User;
+import com.mog.project.domain.user.repository.UserRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
  
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -47,8 +48,27 @@ class ScheduleServiceTest {
     @Mock
     private ScheduleWebSocketPublisher scheduleWebSocketPublisher;
  
+    @Mock
+    private UserRepository userRepository;
+ 
     @InjectMocks
     private ScheduleService scheduleService;
+ 
+    // 테스트용 공통 변수
+    private final String kakaoId = "kakao_123";
+    private final Long userId = 10L;
+ 
+    // kakaoId → userId 변환 Mock 공통 설정
+    private void givenUserFound() {
+        User mockUser = User.builder()
+                .kakaoId(kakaoId)
+                .nickname("테스트유저")
+                .email("test@test.com")
+                .profileImageUrl(null)
+                .build();
+        ReflectionTestUtils.setField(mockUser, "userId", userId);
+        given(userRepository.findByKakaoId(kakaoId)).willReturn(Optional.of(mockUser));
+    }
  
     // ──────────────────────────────────────────
     // 1. 슬롯 등록
@@ -58,7 +78,7 @@ class ScheduleServiceTest {
     void createSlots_success() {
         // given
         Long roomId = 1L;
-        Long userId = 10L;
+        givenUserFound();
  
         SlotCreateRequest request = new SlotCreateRequest(List.of(
                 new SlotCreateRequest.SlotItem(LocalDate.of(2025, 7, 1), LocalTime.of(18, 0)),
@@ -80,7 +100,7 @@ class ScheduleServiceTest {
         given(scheduleSlotRepository.saveAll(any())).willReturn(List.of(slot1, slot2));
  
         // when
-        SlotListResponse response = scheduleService.createSlots(roomId, userId, request);
+        SlotListResponse response = scheduleService.createSlots(roomId, kakaoId, request);
  
         // then
         assertThat(response.slots()).hasSize(2);
@@ -106,7 +126,7 @@ class ScheduleServiceTest {
         ScheduleVote vote = ScheduleVote.builder()
                 .slotId(1L)
                 .roomId(roomId)
-                .userId(10L)
+                .userId(userId)
                 .build();
  
         given(scheduleSlotRepository.findAllByRoomId(roomId)).willReturn(List.of(slot));
@@ -129,8 +149,8 @@ class ScheduleServiceTest {
     void vote_success_register() {
         // given
         Long roomId = 1L;
-        Long userId = 10L;
         Long slotId = 5L;
+        givenUserFound();
  
         VoteRequest request = new VoteRequest(List.of(slotId));
  
@@ -142,7 +162,7 @@ class ScheduleServiceTest {
         given(scheduleVoteRepository.findAllByRoomId(roomId)).willReturn(List.of());
  
         // when
-        VoteResponse response = scheduleService.vote(roomId, userId, request);
+        VoteResponse response = scheduleService.vote(roomId, kakaoId, request);
  
         // then
         assertThat(response.votedSlotIds()).contains(slotId);
@@ -155,8 +175,8 @@ class ScheduleServiceTest {
     void vote_success_cancel() {
         // given
         Long roomId = 1L;
-        Long userId = 10L;
         Long slotId = 5L;
+        givenUserFound();
  
         VoteRequest request = new VoteRequest(List.of(slotId));
  
@@ -166,7 +186,7 @@ class ScheduleServiceTest {
         given(scheduleVoteRepository.findAllByRoomId(roomId)).willReturn(List.of());
  
         // when
-        VoteResponse response = scheduleService.vote(roomId, userId, request);
+        VoteResponse response = scheduleService.vote(roomId, kakaoId, request);
  
         // then
         assertThat(response.votedSlotIds()).isEmpty();
@@ -182,7 +202,7 @@ class ScheduleServiceTest {
     void confirm_success_new() {
         // given
         Long roomId = 1L;
-        Long userId = 10L;
+        givenUserFound();
  
         ScheduleConfirmRequest request = new ScheduleConfirmRequest(
                 LocalDate.of(2025, 7, 1),
@@ -200,7 +220,7 @@ class ScheduleServiceTest {
         given(confirmedScheduleRepository.save(any())).willReturn(confirmedSchedule);
  
         // when
-        ConfirmedScheduleResponse response = scheduleService.confirm(roomId, userId, request);
+        ConfirmedScheduleResponse response = scheduleService.confirm(roomId, kakaoId, request);
  
         // then
         assertThat(response.date()).isEqualTo(LocalDate.of(2025, 7, 1));
@@ -213,7 +233,7 @@ class ScheduleServiceTest {
     void confirm_success_update() {
         // given
         Long roomId = 1L;
-        Long userId = 10L;
+        givenUserFound();
  
         ScheduleConfirmRequest request = new ScheduleConfirmRequest(
                 LocalDate.of(2025, 7, 3),
@@ -230,7 +250,7 @@ class ScheduleServiceTest {
         given(confirmedScheduleRepository.findByRoomId(roomId)).willReturn(Optional.of(existing));
  
         // when
-        ConfirmedScheduleResponse response = scheduleService.confirm(roomId, userId, request);
+        ConfirmedScheduleResponse response = scheduleService.confirm(roomId, kakaoId, request);
  
         // then
         assertThat(response.date()).isEqualTo(LocalDate.of(2025, 7, 3));
@@ -251,7 +271,7 @@ class ScheduleServiceTest {
                 .roomId(roomId)
                 .confirmedDate(LocalDate.of(2025, 7, 1))
                 .confirmedTime(LocalTime.of(18, 0))
-                .confirmedBy(10L)
+                .confirmedBy(userId)
                 .build();
  
         given(confirmedScheduleRepository.findByRoomId(roomId)).willReturn(Optional.of(confirmed));
