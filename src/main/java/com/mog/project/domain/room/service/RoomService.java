@@ -1,6 +1,7 @@
 package com.mog.project.domain.room.service;
 
 import com.mog.project.domain.groups.entity.Group;
+import com.mog.project.domain.groups.entity.GroupMember;
 import com.mog.project.domain.groups.repository.GroupMemberRepository;
 import com.mog.project.domain.groups.repository.GroupRepository;
 import com.mog.project.domain.meeting.repository.MeetingRecordRepository;
@@ -12,6 +13,7 @@ import com.mog.project.domain.room.dto.response.RoomListResponse;
 import com.mog.project.domain.room.dto.response.RoomStatusResponse;
 import com.mog.project.domain.room.dto.response.RoomStepResponse;
 import com.mog.project.domain.room.entity.Room;
+import com.mog.project.domain.room.entity.RoomMember;
 import com.mog.project.domain.room.entity.RoomStatus;
 import com.mog.project.domain.room.repository.RoomMemberRepository;
 import com.mog.project.domain.room.repository.RoomRepository;
@@ -55,6 +57,17 @@ public class RoomService {
          .status(RoomStatus.VOTING)
          .build();
       roomRepository.save(room);
+
+      // 방 생성 시 그룹 멤버 전원을 방 멤버로 등록
+      List<GroupMember> groupMembers = groupMemberRepository.findByGroupGroupId(groupId);
+      List<RoomMember> roomMembers = groupMembers.stream()
+         .map(gm -> RoomMember.builder()
+            .room(room)
+            .user(gm.getUser())
+            .isJoined(true)
+            .build())
+         .toList();
+      roomMemberRepository.saveAll(roomMembers);
 
       return new RoomCreateResponse(
               room.getRoomId(),

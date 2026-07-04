@@ -32,7 +32,9 @@ public class SecurityConfig {
                 session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/api/v1/auth/**",
-                    "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
+                    "/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html",
+                    "/ws-stomp/**") // 웹소켓 핸드셰이크 -> HTTP 레벨 인증은 여기서 건너뛰고 STOMP CONNECT에서 검사(StompAuthInterceptor)
+                    .permitAll()
                 .anyRequest().authenticated()
             )
             .addFilterBefore(new JwtFilter(jwtProvider),
