@@ -9,15 +9,19 @@ import com.mog.project.domain.midpoint.dto.MiddlePointResponse;
 import com.mog.project.domain.midpoint.entity.ConfirmedPlace;
 import com.mog.project.domain.midpoint.entity.DepartureLocation;
 import com.mog.project.domain.midpoint.entity.MiddlePoint;
+import com.mog.project.domain.midpoint.dto.TravelTimeResponse;
+import com.mog.project.domain.midpoint.entity.TravelTime;
 import com.mog.project.domain.midpoint.repository.ConfirmedPlaceRepository;
 import com.mog.project.domain.midpoint.repository.DepartureLocationRepository;
 import com.mog.project.domain.midpoint.repository.MiddlePointRepository;
+import com.mog.project.domain.midpoint.repository.TravelTimeRepository;
 import com.mog.project.domain.room.entity.Room;
 import com.mog.project.domain.room.repository.RoomRepository;
 import com.mog.project.domain.user.entity.User;
 import com.mog.project.domain.user.repository.UserRepository;
 import com.mog.project.global.exception.ErrorCode;
 import com.mog.project.global.exception.GlobalException;
+import com.mog.project.global.kakao.KakaoMobilityClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -35,8 +39,10 @@ public class MidpointService {
     private final DepartureLocationRepository departureLocationRepository;
     private final MiddlePointRepository middlePointRepository;
     private final ConfirmedPlaceRepository confirmedPlaceRepository;
+    private final TravelTimeRepository travelTimeRepository;
     private final UserRepository userRepository;
     private final RoomRepository roomRepository;
+    private final KakaoMobilityClient kakaoMobilityClient;
  
     // kakaoId → User 변환 공통 메서드
     private User getUser(String kakaoId) {
@@ -199,5 +205,52 @@ public class MidpointService {
                 ));
  
         return ConfirmedPlaceResponse.from(confirmedPlace);
+    }
+ 
+    // ──────────────────────────────────────────
+    // 7. 인원별 소요시간 계산 (방장만 가능)
+    // ──────────────────────────────────────────
+    @Transactional
+    public TravelTimeResponse calculateTravelTimes(Long roomId, String kakaoId) {
+        User user = getUser(kakaoId);
+        Room room = getRoom(roomId);
+        validateCreator(room, user.getUserId());
+ 
+        // 중간지점이 먼저 계산되어 있어야 함
+        MiddlePoint middlePoint = middlePointRepository.findByRoomId(roomId)
+                .orElseThrow(() -> new IllegalStateException("중간지점이 먼저 계산되어야 합니다."));
+ 
+        List<DepartureLocation> departures = departureLocationRepository.findAllByRoomId(roomId);
+ 
+        if (departures.isEmpty()) {
+            throw new IllegalStateException("등록된 출발지가 없습니다.");
+        }
+ 
+        // 참여자별 소요시간 계산 및 upsert
+        for (DepartureLocation departure : departures) {
+            int durationMinutes = kakaoMobilityClient.getDurationMinutes(
+                    departure.getLatitude(),
+                    departure.getLongitude(),
+                    middlePoint.getLatitude(),
+                    middlePoint.getLongitude(),
+                    departure.getTransportType()
+            );
+ 
+            travelTimeRepository.findByRoomIdAndUserId(roomId, departure.getUserId())
+                    .ifPresentOrElse(
+                            existing -> existing.update(durationMinutes),
+                            () -> travelTimeRepository.save(
+                                    TravelTime.builder()
+                                            .roomId(roomId)
+                                            .userId(departure.getUserId())
+                                            .durationMinutes(durationMinutes)
+                                            .transportType(departure.getTransportType())
+                                            .build()
+                            )
+                    );
+        }
+ 
+        List<TravelTime> travelTimes = travelTimeRepository.findAllByRoomId(roomId);
+        return TravelTimeResponse.from(roomId, travelTimes);
     }
 }

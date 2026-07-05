@@ -6,6 +6,7 @@ import com.mog.project.domain.midpoint.dto.DepartureLocationListResponse;
 import com.mog.project.domain.midpoint.dto.DepartureLocationRequest;
 import com.mog.project.domain.midpoint.dto.DepartureLocationResponse;
 import com.mog.project.domain.midpoint.dto.MiddlePointResponse;
+import com.mog.project.domain.midpoint.dto.TravelTimeResponse;
 import com.mog.project.domain.midpoint.service.MidpointService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -93,5 +94,17 @@ public class MidpointController {
             @AuthenticationPrincipal String kakaoId,
             @RequestBody ConfirmPlaceRequest request) {
         return ResponseEntity.ok(midpointService.confirmPlace(roomId, kakaoId, request));
+    }
+ 
+    // ──────────────────────────────────────────
+    // 7. 인원별 소요시간 계산 (방장)
+    // POST /api/rooms/{roomId}/midpoint/travel-times
+    // ──────────────────────────────────────────
+    @Operation(summary = "인원별 소요시간 계산", description = "방장이 카카오 모빌리티 API를 통해 참여자별 중간지점까지의 소요시간을 계산합니다. 중간지점이 먼저 계산되어 있어야 합니다.")
+    @PostMapping("/midpoint/travel-times")
+    public ResponseEntity<TravelTimeResponse> calculateTravelTimes(
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal String kakaoId) {
+        return ResponseEntity.ok(midpointService.calculateTravelTimes(roomId, kakaoId));
     }
 }

@@ -1,7 +1,7 @@
 spring:
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: ${DB_URL}
+    url: jdbc:postgresql://mog-db.cslqkiycw0ux.us-east-1.rds.amazonaws.com:5432/mog_prod
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
 
@@ -38,17 +38,26 @@ spring:
             user-name-attribute: id
 
 kakao:
-  redirect-uri: ${KAKAO_REDIRECT_URI}
-
-jwt:
-  secret: ${JWT_SECRET}
-  access-token-expiry: ${JWT_ACCESS_TOKEN_EXPIRY:1800000}
-  refresh-token-expiry: ${JWT_REFRESH_TOKEN_EXPIRY:604800000}  # 7일
-
-cookie:
-  secure: true
-
+  redirect-uri: "http://localhost:5173/oauth/kakao"
+  
 logging:
   level:
     root: WARN
     com.mog.project: INFO
+
+aws:
+  credentials:
+    access-key: ${AWS_ACCESS_KEY}
+    secret-key: ${AWS_SECRET_KEY}
+  region: ${AWS_REGION}
+  s3:
+    bucket: ${AWS_S3_BUCKET}
+    base-url: ${AWS_S3_BASE_URL}
+
+encryption:
+  secret-key: ${ENCRYPTION_SECRET_KEY}
+  
+jwt:
+  secret: ${JWT_SECRET}
+  access-token-expiry: ${JWT_ACCESS_TOKEN_EXPIRY:1800000}
+  refresh-token-expiry: ${JWT_REFRESH_TOKEN_EXPIRY:604800000}  # 7일
