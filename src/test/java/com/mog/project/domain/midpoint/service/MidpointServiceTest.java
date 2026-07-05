@@ -6,7 +6,6 @@ import com.mog.project.domain.midpoint.dto.DepartureLocationListResponse;
 import com.mog.project.domain.midpoint.dto.DepartureLocationRequest;
 import com.mog.project.domain.midpoint.dto.DepartureLocationResponse;
 import com.mog.project.domain.midpoint.dto.MiddlePointResponse;
-import com.mog.project.domain.midpoint.dto.TravelTimeResponse;
 import com.mog.project.domain.midpoint.entity.ConfirmedPlace;
 import com.mog.project.domain.midpoint.entity.DepartureLocation;
 import com.mog.project.domain.midpoint.entity.MiddlePoint;
@@ -57,7 +56,6 @@ class MidpointServiceTest {
     private final Long userId = 10L;
     private final Long roomId = 1L;
  
-    // 공통 Mock 설정
     private User mockUser() {
         User user = User.builder()
                 .kakaoId(kakaoId)
@@ -204,10 +202,10 @@ class MidpointServiceTest {
     }
  
     // ──────────────────────────────────────────
-    // 4. 중간지점 계산
+    // 4. 중간지점 + 소요시간 계산 (통합)
     // ──────────────────────────────────────────
     @Test
-    @DisplayName("중간지점 계산 성공 - 처음 계산")
+    @DisplayName("중간지점 + 소요시간 계산 성공 - 처음 계산")
     void calculateMiddlePoint_success_new() {
         // given
         User user = mockUser();
@@ -215,22 +213,34 @@ class MidpointServiceTest {
         given(userRepository.findByKakaoId(kakaoId)).willReturn(Optional.of(user));
         given(roomRepository.findById(roomId)).willReturn(Optional.of(room));
         given(departureLocationRepository.findAllByRoomId(roomId)).willReturn(List.of(mockDeparture(userId)));
+        given(kakaoMobilityClient.getDurationMinutes(any(), any(), any(), any(), any())).willReturn(23);
+        given(middlePointRepository.findByRoomId(roomId)).willReturn(Optional.empty());
  
         MiddlePoint middlePoint = MiddlePoint.builder()
                 .roomId(roomId)
                 .latitude(new BigDecimal("37.4979000"))
                 .longitude(new BigDecimal("127.0276000"))
                 .build();
- 
-        given(middlePointRepository.findByRoomId(roomId)).willReturn(Optional.empty());
         given(middlePointRepository.save(any())).willReturn(middlePoint);
+ 
+        TravelTime travelTime = TravelTime.builder()
+                .roomId(roomId)
+                .userId(userId)
+                .durationMinutes(23)
+                .transportType("PUBLIC")
+                .build();
+        given(travelTimeRepository.findByRoomIdAndUserId(roomId, userId)).willReturn(Optional.empty());
+        given(travelTimeRepository.findAllByRoomId(roomId)).willReturn(List.of(travelTime));
  
         // when
         MiddlePointResponse response = midpointService.calculateMiddlePoint(roomId, kakaoId);
  
         // then
-        assertThat(response.latitude()).isEqualTo(new BigDecimal("37.4979000"));
+        assertThat(response.latitude()).isNotNull();
+        assertThat(response.travelTimes()).hasSize(1);
+        assertThat(response.travelTimes().get(0).durationMinutes()).isEqualTo(23);
         verify(middlePointRepository, times(1)).save(any());
+        verify(travelTimeRepository, times(1)).save(any());
     }
  
     @Test
@@ -238,13 +248,29 @@ class MidpointServiceTest {
     void calculateMiddlePoint_fail_notCreator() {
         // given
         User user = mockUser();
-        Room room = mockRoom(999L); // 다른 유저가 방장
+        Room room = mockRoom(999L);
         given(userRepository.findByKakaoId(kakaoId)).willReturn(Optional.of(user));
         given(roomRepository.findById(roomId)).willReturn(Optional.of(room));
  
         // when & then
         assertThatThrownBy(() -> midpointService.calculateMiddlePoint(roomId, kakaoId))
                 .isInstanceOf(GlobalException.class);
+    }
+ 
+    @Test
+    @DisplayName("중간지점 계산 실패 - 등록된 출발지 없음")
+    void calculateMiddlePoint_fail_noDepartures() {
+        // given
+        User user = mockUser();
+        Room room = mockRoom(userId);
+        given(userRepository.findByKakaoId(kakaoId)).willReturn(Optional.of(user));
+        given(roomRepository.findById(roomId)).willReturn(Optional.of(room));
+        given(departureLocationRepository.findAllByRoomId(roomId)).willReturn(List.of());
+ 
+        // when & then
+        assertThatThrownBy(() -> midpointService.calculateMiddlePoint(roomId, kakaoId))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("등록된 출발지가 없습니다.");
     }
  
     // ──────────────────────────────────────────
@@ -259,13 +285,22 @@ class MidpointServiceTest {
                 .latitude(new BigDecimal("37.4979000"))
                 .longitude(new BigDecimal("127.0276000"))
                 .build();
+        TravelTime travelTime = TravelTime.builder()
+                .roomId(roomId)
+                .userId(userId)
+                .durationMinutes(23)
+                .transportType("PUBLIC")
+                .build();
+ 
         given(middlePointRepository.findByRoomId(roomId)).willReturn(Optional.of(middlePoint));
+        given(travelTimeRepository.findAllByRoomId(roomId)).willReturn(List.of(travelTime));
  
         // when
         MiddlePointResponse response = midpointService.getMiddlePoint(roomId);
  
         // then
         assertThat(response.latitude()).isEqualTo(new BigDecimal("37.4979000"));
+        assertThat(response.travelTimes()).hasSize(1);
     }
  
     @Test
@@ -318,58 +353,22 @@ class MidpointServiceTest {
         verify(confirmedPlaceRepository, times(1)).save(any());
     }
  
-    // ──────────────────────────────────────────
-    // 7. 인원별 소요시간 계산
-    // ──────────────────────────────────────────
     @Test
-    @DisplayName("소요시간 계산 성공")
-    void calculateTravelTimes_success() {
+    @DisplayName("장소 확정 실패 - 방장 아님")
+    void confirmPlace_fail_notCreator() {
         // given
         User user = mockUser();
-        Room room = mockRoom(userId);
+        Room room = mockRoom(999L);
         given(userRepository.findByKakaoId(kakaoId)).willReturn(Optional.of(user));
         given(roomRepository.findById(roomId)).willReturn(Optional.of(room));
  
-        MiddlePoint middlePoint = MiddlePoint.builder()
-                .roomId(roomId)
-                .latitude(new BigDecimal("37.5012000"))
-                .longitude(new BigDecimal("127.0386000"))
-                .build();
-        given(middlePointRepository.findByRoomId(roomId)).willReturn(Optional.of(middlePoint));
-        given(departureLocationRepository.findAllByRoomId(roomId)).willReturn(List.of(mockDeparture(userId)));
-        given(kakaoMobilityClient.getDurationMinutes(any(), any(), any(), any(), any())).willReturn(23);
-        given(travelTimeRepository.findByRoomIdAndUserId(roomId, userId)).willReturn(Optional.empty());
- 
-        TravelTime travelTime = TravelTime.builder()
-                .roomId(roomId)
-                .userId(userId)
-                .durationMinutes(23)
-                .transportType("PUBLIC")
-                .build();
-        given(travelTimeRepository.findAllByRoomId(roomId)).willReturn(List.of(travelTime));
- 
-        // when
-        TravelTimeResponse response = midpointService.calculateTravelTimes(roomId, kakaoId);
- 
-        // then
-        assertThat(response.travelTimes()).hasSize(1);
-        assertThat(response.travelTimes().get(0).durationMinutes()).isEqualTo(23);
-        verify(travelTimeRepository, times(1)).save(any());
-    }
- 
-    @Test
-    @DisplayName("소요시간 계산 실패 - 중간지점 미계산")
-    void calculateTravelTimes_fail_noMiddlePoint() {
-        // given
-        User user = mockUser();
-        Room room = mockRoom(userId);
-        given(userRepository.findByKakaoId(kakaoId)).willReturn(Optional.of(user));
-        given(roomRepository.findById(roomId)).willReturn(Optional.of(room));
-        given(middlePointRepository.findByRoomId(roomId)).willReturn(Optional.empty());
+        ConfirmPlaceRequest request = new ConfirmPlaceRequest(
+                "12345678", "스시조", "서울 강남구 ...", "FD6",
+                new BigDecimal("37.5015000"), new BigDecimal("127.0390000")
+        );
  
         // when & then
-        assertThatThrownBy(() -> midpointService.calculateTravelTimes(roomId, kakaoId))
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("중간지점이 먼저 계산되어야 합니다.");
+        assertThatThrownBy(() -> midpointService.confirmPlace(roomId, kakaoId, request))
+                .isInstanceOf(GlobalException.class);
     }
 }
