@@ -9,7 +9,6 @@ import com.mog.project.domain.midpoint.dto.MiddlePointResponse;
 import com.mog.project.domain.midpoint.entity.ConfirmedPlace;
 import com.mog.project.domain.midpoint.entity.DepartureLocation;
 import com.mog.project.domain.midpoint.entity.MiddlePoint;
-import com.mog.project.domain.midpoint.dto.TravelTimeResponse;
 import com.mog.project.domain.midpoint.entity.TravelTime;
 import com.mog.project.domain.midpoint.repository.ConfirmedPlaceRepository;
 import com.mog.project.domain.midpoint.repository.DepartureLocationRepository;
@@ -35,6 +34,9 @@ import java.util.Objects;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class MidpointService {
+ 
+    private static final int MAX_ITERATIONS = 3;  // 이진 탐색 반복 횟수
+    private static final double MOVE_RATIO = 0.3;  // 후보 지점 이동 비율
  
     private final DepartureLocationRepository departureLocationRepository;
     private final MiddlePointRepository middlePointRepository;
@@ -71,7 +73,6 @@ public class MidpointService {
     public DepartureLocationResponse registerDeparture(Long roomId, String kakaoId, DepartureLocationRequest request) {
         User user = getUser(kakaoId);
  
-        // 이미 등록된 출발지가 있으면 예외
         if (departureLocationRepository.existsByRoomIdAndUserId(roomId, user.getUserId())) {
             throw new IllegalStateException("이미 출발지가 등록되어 있습니다. 수정은 PATCH를 사용해주세요.");
         }
@@ -119,7 +120,8 @@ public class MidpointService {
     }
  
     // ──────────────────────────────────────────
-    // 4. 중간지점 계산 (방장만 가능)
+    // 4. 중간지점 계산 + 소요시간 계산 (방장만 가능)
+    // 이진 탐색 방식으로 카카오 모빌리티 API 활용
     // ──────────────────────────────────────────
     @Transactional
     public MiddlePointResponse calculateMiddlePoint(Long roomId, String kakaoId) {
@@ -133,32 +135,94 @@ public class MidpointService {
             throw new IllegalStateException("등록된 출발지가 없습니다.");
         }
  
-        // 위도/경도 평균으로 중간지점 계산
-        BigDecimal avgLatitude = departures.stream()
+        // 1단계: 위도/경도 평균으로 초기 후보 지점 설정
+        BigDecimal candidateLat = departures.stream()
                 .map(DepartureLocation::getLatitude)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .divide(BigDecimal.valueOf(departures.size()), 7, RoundingMode.HALF_UP);
  
-        BigDecimal avgLongitude = departures.stream()
+        BigDecimal candidateLng = departures.stream()
                 .map(DepartureLocation::getLongitude)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .divide(BigDecimal.valueOf(departures.size()), 7, RoundingMode.HALF_UP);
  
-        // upsert - 이미 계산된 경우 덮어쓰기
+        // 2~4단계: 이진 탐색으로 후보 지점 이동 (3회 반복)
+        for (int i = 0; i < MAX_ITERATIONS; i++) {
+            int maxDuration = -1;
+            DepartureLocation farthest = null;
+ 
+            for (DepartureLocation departure : departures) {
+                int duration = kakaoMobilityClient.getDurationMinutes(
+                        departure.getLatitude(),
+                        departure.getLongitude(),
+                        candidateLat,
+                        candidateLng,
+                        departure.getTransportType()
+                );
+ 
+                if (duration > maxDuration) {
+                    maxDuration = duration;
+                    farthest = departure;
+                }
+            }
+ 
+            // 소요시간이 가장 긴 출발지 방향으로 후보 지점 이동
+            if (farthest != null) {
+                candidateLat = candidateLat.add(
+                        farthest.getLatitude().subtract(candidateLat)
+                                .multiply(BigDecimal.valueOf(MOVE_RATIO))
+                ).setScale(7, RoundingMode.HALF_UP);
+ 
+                candidateLng = candidateLng.add(
+                        farthest.getLongitude().subtract(candidateLng)
+                                .multiply(BigDecimal.valueOf(MOVE_RATIO))
+                ).setScale(7, RoundingMode.HALF_UP);
+            }
+        }
+ 
+        // 5단계: 중간지점 저장 (upsert)
+        final BigDecimal finalLat = candidateLat;
+        final BigDecimal finalLng = candidateLng;
+ 
         MiddlePoint middlePoint = middlePointRepository.findByRoomId(roomId)
                 .map(existing -> {
-                    existing.update(avgLatitude, avgLongitude);
+                    existing.update(finalLat, finalLng);
                     return existing;
                 })
                 .orElseGet(() -> middlePointRepository.save(
                         MiddlePoint.builder()
                                 .roomId(roomId)
-                                .latitude(avgLatitude)
-                                .longitude(avgLongitude)
+                                .latitude(finalLat)
+                                .longitude(finalLng)
                                 .build()
                 ));
  
-        return MiddlePointResponse.from(middlePoint);
+        // 6단계: 소요시간 저장 (upsert)
+        for (DepartureLocation departure : departures) {
+            int durationMinutes = kakaoMobilityClient.getDurationMinutes(
+                    departure.getLatitude(),
+                    departure.getLongitude(),
+                    finalLat,
+                    finalLng,
+                    departure.getTransportType()
+            );
+ 
+            travelTimeRepository.findByRoomIdAndUserId(roomId, departure.getUserId())
+                    .ifPresentOrElse(
+                            existing -> existing.update(durationMinutes),
+                            () -> travelTimeRepository.save(
+                                    TravelTime.builder()
+                                            .roomId(roomId)
+                                            .userId(departure.getUserId())
+                                            .durationMinutes(durationMinutes)
+                                            .transportType(departure.getTransportType())
+                                            .build()
+                            )
+                    );
+        }
+ 
+        List<TravelTime> travelTimes = travelTimeRepository.findAllByRoomId(roomId);
+        return MiddlePointResponse.from(middlePoint, travelTimes);
     }
  
     // ──────────────────────────────────────────
@@ -167,7 +231,8 @@ public class MidpointService {
     public MiddlePointResponse getMiddlePoint(Long roomId) {
         MiddlePoint middlePoint = middlePointRepository.findByRoomId(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("아직 중간지점이 계산되지 않았습니다."));
-        return MiddlePointResponse.from(middlePoint);
+        List<TravelTime> travelTimes = travelTimeRepository.findAllByRoomId(roomId);
+        return MiddlePointResponse.from(middlePoint, travelTimes);
     }
  
     // ──────────────────────────────────────────
@@ -179,7 +244,6 @@ public class MidpointService {
         Room room = getRoom(roomId);
         validateCreator(room, user.getUserId());
  
-        // upsert - 이미 확정된 경우 덮어쓰기
         ConfirmedPlace confirmedPlace = confirmedPlaceRepository.findByRoomId(roomId)
                 .map(existing -> {
                     existing.update(
@@ -205,52 +269,5 @@ public class MidpointService {
                 ));
  
         return ConfirmedPlaceResponse.from(confirmedPlace);
-    }
- 
-    // ──────────────────────────────────────────
-    // 7. 인원별 소요시간 계산 (방장만 가능)
-    // ──────────────────────────────────────────
-    @Transactional
-    public TravelTimeResponse calculateTravelTimes(Long roomId, String kakaoId) {
-        User user = getUser(kakaoId);
-        Room room = getRoom(roomId);
-        validateCreator(room, user.getUserId());
- 
-        // 중간지점이 먼저 계산되어 있어야 함
-        MiddlePoint middlePoint = middlePointRepository.findByRoomId(roomId)
-                .orElseThrow(() -> new IllegalStateException("중간지점이 먼저 계산되어야 합니다."));
- 
-        List<DepartureLocation> departures = departureLocationRepository.findAllByRoomId(roomId);
- 
-        if (departures.isEmpty()) {
-            throw new IllegalStateException("등록된 출발지가 없습니다.");
-        }
- 
-        // 참여자별 소요시간 계산 및 upsert
-        for (DepartureLocation departure : departures) {
-            int durationMinutes = kakaoMobilityClient.getDurationMinutes(
-                    departure.getLatitude(),
-                    departure.getLongitude(),
-                    middlePoint.getLatitude(),
-                    middlePoint.getLongitude(),
-                    departure.getTransportType()
-            );
- 
-            travelTimeRepository.findByRoomIdAndUserId(roomId, departure.getUserId())
-                    .ifPresentOrElse(
-                            existing -> existing.update(durationMinutes),
-                            () -> travelTimeRepository.save(
-                                    TravelTime.builder()
-                                            .roomId(roomId)
-                                            .userId(departure.getUserId())
-                                            .durationMinutes(durationMinutes)
-                                            .transportType(departure.getTransportType())
-                                            .build()
-                            )
-                    );
-        }
- 
-        List<TravelTime> travelTimes = travelTimeRepository.findAllByRoomId(roomId);
-        return TravelTimeResponse.from(roomId, travelTimes);
     }
 }
