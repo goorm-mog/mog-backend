@@ -68,7 +68,7 @@ public class MidpointController {
     public ResponseEntity<MiddlePointResponse> calculateMiddlePoint(
             @PathVariable Long roomId,
             @AuthenticationPrincipal String kakaoId) {
-        return ResponseEntity.ok(midpointService.calculateMiddlePoint(roomId));
+        return ResponseEntity.ok(midpointService.calculateMiddlePoint(roomId, kakaoId));
     }
  
     // ──────────────────────────────────────────
