@@ -8,10 +8,12 @@ import com.mog.project.domain.user.repository.UserRepository;
 import com.mog.project.global.auth.jwt.JwtProvider;
 import com.mog.project.global.auth.oauth2.client.KakaoApiClient;
 import com.mog.project.global.auth.oauth2.client.KakaoOAuthClient;
+import com.mog.project.global.auth.oauth2.client.KakaoOAuthClient.KakaoTokenResponse;
 import com.mog.project.global.auth.oauth2.dto.KakaoUserInfoResponse;
 import com.mog.project.global.exception.AuthException;
 import com.mog.project.global.exception.ErrorCode;
 import jakarta.servlet.http.HttpServletResponse;
+import java.time.LocalDateTime;
 import java.util.concurrent.TimeUnit;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,22 +42,24 @@ public class AuthService {
 
     @Transactional
     public AuthLoginResponse kakaoLogin(KakaoLoginRequest request, HttpServletResponse response) {
-        return processKakaoLogin(request.accessToken(), response);
+        return processKakaoLogin(new KakaoTokenResponse(request.accessToken(), null, null), response);
     }
 
     @Transactional
     public AuthLoginResponse kakaoLoginWithCode(String code, HttpServletResponse response) {
-        String kakaoAccessToken = kakaoOAuthClient.exchangeCodeForAccessToken(code);
-        return processKakaoLogin(kakaoAccessToken, response);
+        KakaoTokenResponse token = kakaoOAuthClient.exchangeCodeForToken(code);
+        return processKakaoLogin(token, response);
     }
 
-    private AuthLoginResponse processKakaoLogin(String kakaoAccessToken, HttpServletResponse response) {
-        KakaoUserInfoResponse kakaoUser = kakaoApiClient.getUserInfo(kakaoAccessToken);
+    private AuthLoginResponse processKakaoLogin(KakaoTokenResponse token, HttpServletResponse response) {
+        KakaoUserInfoResponse kakaoUser = kakaoApiClient.getUserInfo(token.accessToken());
         String kakaoId = String.valueOf(kakaoUser.id());
+        LocalDateTime expiresAt = token.expiresIn() == null ? null : LocalDateTime.now().plusSeconds(token.expiresIn());
 
         User user = userRepository.findByKakaoId(kakaoId)
             .map(existing -> {
                 existing.updateProfile(kakaoUser.getNickname(), kakaoUser.getProfileImageUrl());
+                existing.updateKakaoToken(token.accessToken(), token.refreshToken(), expiresAt);
                 return existing;
             })
             .orElseGet(() -> userRepository.save(
@@ -64,6 +68,9 @@ public class AuthService {
                     .nickname(kakaoUser.getNickname())
                     .email(kakaoUser.getEmail())
                     .profileImageUrl(kakaoUser.getProfileImageUrl())
+                    .kakaoAccessToken(token.accessToken())
+                    .kakaoRefreshToken(token.refreshToken())
+                    .kakaoTokenExpiresAt(expiresAt)
                     .build()
             ));
 
