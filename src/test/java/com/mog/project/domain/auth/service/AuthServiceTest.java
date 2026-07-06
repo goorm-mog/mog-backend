@@ -111,6 +111,7 @@ class AuthServiceTest {
         JwtProvider shortExpiry = new JwtProvider(SECRET, ACCESS_EXPIRY, REFRESH_EXPIRY);
         String rt = shortExpiry.generateRefreshToken("42");
         given(valueOperations.get("RT:42")).willReturn(rt);
+        given(userRepository.findByKakaoId("42")).willReturn(Optional.of(user("42", "테스트유저", null)));
 
         AuthService svc = new AuthService(kakaoApiClient, kakaoOAuthClient, userRepository, shortExpiry, redisTemplate);
         AccessTokenReissueResponse result = svc.reissue(rt, new MockHttpServletResponse());

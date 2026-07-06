@@ -17,6 +17,7 @@ public enum ErrorCode {
   UNAUTHORIZED_USER(HttpStatus.UNAUTHORIZED, "UNAUTHORIZED_USER", "인증되지 않은 사용자입니다."),
   FORBIDDEN(HttpStatus.FORBIDDEN, "FORBIDDEN", "접근 권한이 없습니다."),
   INVALID_KAKAO_TOKEN(HttpStatus.BAD_REQUEST, "INVALID_KAKAO_TOKEN", "유효하지 않은 카카오 토큰입니다."),
+  KAKAO_ACCOUNT_INFO_MISSING(HttpStatus.BAD_REQUEST, "KAKAO_ACCOUNT_INFO_MISSING", "카카오 계정 정보(닉네임/이메일/프로필사진) 동의가 필요합니다."),
   INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "INVALID_REFRESH_TOKEN", "유효하지 않은 Refresh Token입니다."),
   REFRESH_TOKEN_NOT_FOUND(HttpStatus.UNAUTHORIZED, "REFRESH_TOKEN_NOT_FOUND", "Refresh Token이 존재하지 않습니다."),
 
