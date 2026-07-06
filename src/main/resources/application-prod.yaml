@@ -1,10 +1,9 @@
 spring:
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://mog-db.cslqkiycw0ux.us-east-1.rds.amazonaws.com:5432/mog_prod
+    url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
-
   jpa:
     open-in-view: false
     hibernate:
@@ -13,12 +12,10 @@ spring:
       hibernate:
         format_sql: false
         show_sql: false
-
   data:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT:6379}
-
   security:
     oauth2:
       client:
@@ -38,8 +35,12 @@ spring:
             user-name-attribute: id
 
 kakao:
-  redirect-uri: "http://localhost:5173/oauth/kakao"
-  
+  redirect-uri: ${KAKAO_REDIRECT_URI}
+
+cookie:
+  secure: true
+  redirect-uri: ${KAKAO_REDIRECT_URI}
+
 logging:
   level:
     root: WARN
@@ -56,7 +57,7 @@ aws:
 
 encryption:
   secret-key: ${ENCRYPTION_SECRET_KEY}
-  
+
 jwt:
   secret: ${JWT_SECRET}
   access-token-expiry: ${JWT_ACCESS_TOKEN_EXPIRY:1800000}
