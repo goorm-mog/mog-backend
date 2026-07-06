@@ -39,3 +39,4 @@ out/
 ### Local config ###
 *-local.yaml
 application-dev.yaml
+application-prod.yaml
