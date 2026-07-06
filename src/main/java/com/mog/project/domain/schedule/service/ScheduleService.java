@@ -1,5 +1,7 @@
 package com.mog.project.domain.schedule.service;
 
+import com.mog.project.domain.room.entity.RoomMember;
+import com.mog.project.domain.room.repository.RoomMemberRepository;
 import com.mog.project.domain.schedule.dto.ScheduleConfirmRequest;
 import com.mog.project.domain.schedule.dto.SlotCreateRequest;
 import com.mog.project.domain.schedule.dto.VoteRequest;
@@ -14,6 +16,7 @@ import com.mog.project.domain.schedule.repository.ScheduleSlotRepository;
 import com.mog.project.domain.schedule.repository.ScheduleVoteRepository;
 import com.mog.project.domain.user.entity.User;
 import com.mog.project.domain.user.repository.UserRepository;
+import com.mog.project.global.kakao.KakaoCalendarClient;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +33,8 @@ public class ScheduleService {
     private final ConfirmedScheduleRepository confirmedScheduleRepository;
     private final ScheduleWebSocketPublisher scheduleWebSocketPublisher;
     private final UserRepository userRepository;
+    private final RoomMemberRepository roomMemberRepository;
+    private final KakaoCalendarClient kakaoCalendarClient;
  
     // kakaoId → userId 변환 공통 메서드
     private Long getUserId(String kakaoId) {
@@ -101,7 +106,7 @@ public class ScheduleService {
     }
  
     // ──────────────────────────────────────────
-    // 4. 일정 확정 (방장) - upsert + WS 브로드캐스트
+    // 4. 일정 확정 (방장) - upsert + WS 브로드캐스트 + 톡캘린더 연동
     // ──────────────────────────────────────────
     @Transactional
     public ConfirmedScheduleResponse confirm(Long roomId, String kakaoId, ScheduleConfirmRequest request) {
@@ -109,6 +114,7 @@ public class ScheduleService {
  
         ConfirmedSchedule confirmed = confirmedScheduleRepository.findByRoomId(roomId)
                 .map(existing -> {
+                    // 이미 확정된 경우 → 덮어쓰기
                     existing.update(request.date(), request.time());
                     return existing;
                 })
@@ -123,9 +129,37 @@ public class ScheduleService {
                         )
                 );
  
-        // TODO: 카카오 톡캘린더 API 연동 후 kakaoEventId 업데이트
-        // String eventId = kakaoCalendarClient.createEvent(confirmed);
-        // confirmed.updateKakaoEventId(eventId);
+        // 카카오 톡캘린더 연동 - 참여자 전원 캘린더에 일정 등록
+        List<RoomMember> roomMembers = roomMemberRepository.findByRoomRoomId(roomId);
+        for (RoomMember member : roomMembers) {
+            User memberUser = member.getUser();
+            try {
+                if (confirmed.getKakaoEventId() == null) {
+                    // 처음 확정 → 일정 생성
+                    String eventId = kakaoCalendarClient.createEvent(
+                            memberUser,
+                            "모임 일정",
+                            request.date(),
+                            request.time()
+                    );
+                    // 방장의 eventId만 저장 (대표)
+                    if (memberUser.getUserId().equals(userId)) {
+                        confirmed.updateKakaoEventId(eventId);
+                    }
+                } else {
+                    // 재확정 → 일정 수정
+                    kakaoCalendarClient.updateEvent(
+                            memberUser,
+                            confirmed.getKakaoEventId(),
+                            "모임 일정",
+                            request.date(),
+                            request.time()
+                    );
+                }
+            } catch (Exception e) {
+                // 톡캘린더 등록 실패해도 일정 확정은 유지
+            }
+        }
  
         ConfirmedScheduleResponse response = ConfirmedScheduleResponse.from(confirmed);
         scheduleWebSocketPublisher.publishConfirm(roomId, response);
