@@ -1,5 +1,7 @@
 package com.mog.project.domain.schedule.service;
 
+import com.mog.project.domain.room.entity.RoomMember;
+import com.mog.project.domain.room.repository.RoomMemberRepository;
 import com.mog.project.domain.schedule.dto.ScheduleConfirmRequest;
 import com.mog.project.domain.schedule.dto.SlotCreateRequest;
 import com.mog.project.domain.schedule.dto.VoteRequest;
@@ -14,6 +16,7 @@ import com.mog.project.domain.schedule.repository.ScheduleSlotRepository;
 import com.mog.project.domain.schedule.repository.ScheduleVoteRepository;
 import com.mog.project.domain.user.entity.User;
 import com.mog.project.domain.user.repository.UserRepository;
+import com.mog.project.global.kakao.KakaoCalendarClient;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,38 +39,36 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ScheduleServiceTest {
  
-    @Mock
-    private ScheduleSlotRepository scheduleSlotRepository;
- 
-    @Mock
-    private ScheduleVoteRepository scheduleVoteRepository;
- 
-    @Mock
-    private ConfirmedScheduleRepository confirmedScheduleRepository;
- 
-    @Mock
-    private ScheduleWebSocketPublisher scheduleWebSocketPublisher;
- 
-    @Mock
-    private UserRepository userRepository;
+    @Mock private ScheduleSlotRepository scheduleSlotRepository;
+    @Mock private ScheduleVoteRepository scheduleVoteRepository;
+    @Mock private ConfirmedScheduleRepository confirmedScheduleRepository;
+    @Mock private ScheduleWebSocketPublisher scheduleWebSocketPublisher;
+    @Mock private UserRepository userRepository;
+    @Mock private RoomMemberRepository roomMemberRepository;
+    @Mock private KakaoCalendarClient kakaoCalendarClient;
  
     @InjectMocks
     private ScheduleService scheduleService;
  
-    // 테스트용 공통 변수
     private final String kakaoId = "kakao_123";
     private final Long userId = 10L;
  
-    // kakaoId → userId 변환 Mock 공통 설정
-    private void givenUserFound() {
-        User mockUser = User.builder()
+    private User mockUser() {
+        User user = User.builder()
                 .kakaoId(kakaoId)
                 .nickname("테스트유저")
                 .email("test@test.com")
                 .profileImageUrl(null)
+                .kakaoAccessToken("kakao_access_token")
+                .kakaoRefreshToken("kakao_refresh_token")
+                .kakaoTokenExpiresAt(null)
                 .build();
-        ReflectionTestUtils.setField(mockUser, "userId", userId);
-        given(userRepository.findByKakaoId(kakaoId)).willReturn(Optional.of(mockUser));
+        ReflectionTestUtils.setField(user, "userId", userId);
+        return user;
+    }
+ 
+    private void givenUserFound() {
+        given(userRepository.findByKakaoId(kakaoId)).willReturn(Optional.of(mockUser()));
     }
  
     // ──────────────────────────────────────────
@@ -168,6 +169,7 @@ class ScheduleServiceTest {
         assertThat(response.votedSlotIds()).contains(slotId);
         verify(scheduleVoteRepository, times(1)).save(any());
         verify(scheduleVoteRepository, never()).deleteBySlotIdAndUserId(any(), any());
+        verify(scheduleWebSocketPublisher, times(1)).publishVoteUpdate(any(), any());
     }
  
     @Test
@@ -192,17 +194,19 @@ class ScheduleServiceTest {
         assertThat(response.votedSlotIds()).isEmpty();
         verify(scheduleVoteRepository, times(1)).deleteBySlotIdAndUserId(slotId, userId);
         verify(scheduleVoteRepository, never()).save(any());
+        verify(scheduleWebSocketPublisher, times(1)).publishVoteUpdate(any(), any());
     }
  
     // ──────────────────────────────────────────
     // 4. 일정 확정
     // ──────────────────────────────────────────
     @Test
-    @DisplayName("일정 확정 성공 - 처음 확정하는 경우 새로 저장")
+    @DisplayName("일정 확정 성공 - 처음 확정하는 경우 새로 저장 + 톡캘린더 등록")
     void confirm_success_new() {
         // given
         Long roomId = 1L;
-        givenUserFound();
+        User user = mockUser();
+        given(userRepository.findByKakaoId(kakaoId)).willReturn(Optional.of(user));
  
         ScheduleConfirmRequest request = new ScheduleConfirmRequest(
                 LocalDate.of(2025, 7, 1),
@@ -219,6 +223,12 @@ class ScheduleServiceTest {
         given(confirmedScheduleRepository.findByRoomId(roomId)).willReturn(Optional.empty());
         given(confirmedScheduleRepository.save(any())).willReturn(confirmedSchedule);
  
+        // RoomMember Mock
+        RoomMember roomMember = mock(RoomMember.class);
+        given(roomMember.getUser()).willReturn(user);
+        given(roomMemberRepository.findByRoomRoomId(roomId)).willReturn(List.of(roomMember));
+        given(kakaoCalendarClient.createEvent(any(), any(), any(), any())).willReturn("kakao_event_123");
+ 
         // when
         ConfirmedScheduleResponse response = scheduleService.confirm(roomId, kakaoId, request);
  
@@ -226,14 +236,17 @@ class ScheduleServiceTest {
         assertThat(response.date()).isEqualTo(LocalDate.of(2025, 7, 1));
         assertThat(response.time()).isEqualTo(LocalTime.of(18, 0));
         verify(confirmedScheduleRepository, times(1)).save(any());
+        verify(kakaoCalendarClient, times(1)).createEvent(any(), any(), any(), any());
+        verify(scheduleWebSocketPublisher, times(1)).publishConfirm(any(), any());
     }
  
     @Test
-    @DisplayName("일정 확정 성공 - 이미 확정된 경우 덮어쓰기")
+    @DisplayName("일정 확정 성공 - 이미 확정된 경우 덮어쓰기 + 톡캘린더 수정")
     void confirm_success_update() {
         // given
         Long roomId = 1L;
-        givenUserFound();
+        User user = mockUser();
+        given(userRepository.findByKakaoId(kakaoId)).willReturn(Optional.of(user));
  
         ScheduleConfirmRequest request = new ScheduleConfirmRequest(
                 LocalDate.of(2025, 7, 3),
@@ -246,8 +259,13 @@ class ScheduleServiceTest {
                 .confirmedTime(LocalTime.of(18, 0))
                 .confirmedBy(userId)
                 .build();
+        ReflectionTestUtils.setField(existing, "kakaoEventId", "kakao_event_123");
  
         given(confirmedScheduleRepository.findByRoomId(roomId)).willReturn(Optional.of(existing));
+ 
+        RoomMember roomMember = mock(RoomMember.class);
+        given(roomMember.getUser()).willReturn(user);
+        given(roomMemberRepository.findByRoomRoomId(roomId)).willReturn(List.of(roomMember));
  
         // when
         ConfirmedScheduleResponse response = scheduleService.confirm(roomId, kakaoId, request);
@@ -256,6 +274,8 @@ class ScheduleServiceTest {
         assertThat(response.date()).isEqualTo(LocalDate.of(2025, 7, 3));
         assertThat(response.time()).isEqualTo(LocalTime.of(20, 0));
         verify(confirmedScheduleRepository, never()).save(any());
+        verify(kakaoCalendarClient, times(1)).updateEvent(any(), any(), any(), any(), any());
+        verify(scheduleWebSocketPublisher, times(1)).publishConfirm(any(), any());
     }
  
     // ──────────────────────────────────────────
