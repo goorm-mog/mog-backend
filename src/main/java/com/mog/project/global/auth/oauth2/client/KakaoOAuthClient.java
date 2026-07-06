@@ -3,6 +3,8 @@ package com.mog.project.global.auth.oauth2.client;
 import com.mog.project.global.exception.AuthException;
 import com.mog.project.global.exception.ErrorCode;
 import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -10,10 +12,12 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 
 @Component
 public class KakaoOAuthClient {
 
+    private static final Logger log = LoggerFactory.getLogger(KakaoOAuthClient.class);
     private static final String KAKAO_TOKEN_URL = "https://kauth.kakao.com/oauth/token";
 
     private final RestClient restClient;
@@ -48,7 +52,12 @@ public class KakaoOAuthClient {
                 .body(Map.class);
 
             return (String) response.get("access_token");
+        } catch (RestClientResponseException e) {
+            log.warn("카카오 토큰 교환 실패: status={}, body={}, redirectUri={}",
+                e.getStatusCode(), e.getResponseBodyAsString(), redirectUri);
+            throw new AuthException(ErrorCode.INVALID_KAKAO_TOKEN);
         } catch (RestClientException e) {
+            log.warn("카카오 토큰 교환 통신 실패: redirectUri={}", redirectUri, e);
             throw new AuthException(ErrorCode.INVALID_KAKAO_TOKEN);
         }
     }

@@ -96,6 +96,12 @@ public class AuthService {
             throw new AuthException(ErrorCode.INVALID_REFRESH_TOKEN);
         }
 
+        // 탈퇴 등으로 DB에 유저가 없으면 Redis에 RT가 남아있어도 재발급 거부
+        if (userRepository.findByKakaoId(kakaoId).isEmpty()) {
+            redisTemplate.delete(RT_PREFIX + kakaoId);
+            throw new AuthException(ErrorCode.UNAUTHORIZED_USER);
+        }
+
         // RTR: AT와 RT를 모두 교체하여 단발성 RT 유지
         String newAccessToken = jwtProvider.generateAccessToken(kakaoId);
         String newRefreshToken = jwtProvider.generateRefreshToken(kakaoId);
