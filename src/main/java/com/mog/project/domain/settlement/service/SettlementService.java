@@ -3,6 +3,8 @@ package com.mog.project.domain.settlement.service;
 import com.mog.project.domain.groups.entity.GroupMember;
 import com.mog.project.domain.groups.entity.GroupMemberRole;
 import com.mog.project.domain.groups.repository.GroupMemberRepository;
+import com.mog.project.domain.notification.entity.NotificationType;
+import com.mog.project.domain.notification.service.NotificationService;
 import com.mog.project.domain.meeting.entity.MeetingMemberCost;
 import com.mog.project.domain.meeting.entity.MeetingRecord;
 import com.mog.project.domain.meeting.repository.MeetingMemberCostRepository;
@@ -106,9 +108,14 @@ public class SettlementService {
         return buildResponse(settlement, costsByMember, nicknameMap);
     }
 
-    public SettlementResponse getSettlement(Long roomId) {
+    public SettlementResponse getSettlement(Long roomId, String kakaoId) {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new GlobalException(ErrorCode.ROOM_NOT_FOUND));
+
+        User user = userRepository.findByKakaoId(kakaoId)
+                .orElseThrow(() -> new GlobalException(ErrorCode.FORBIDDEN));
+        groupMemberRepository.findByGroupGroupIdAndUserUserId(room.getGroup().getGroupId(), user.getUserId())
+                .orElseThrow(() -> new GlobalException(ErrorCode.FORBIDDEN));
 
         Settlement settlement = settlementRepository.findByRoomId(roomId)
                 .orElseThrow(() -> new GlobalException(ErrorCode.SETTLEMENT_NOT_FOUND));

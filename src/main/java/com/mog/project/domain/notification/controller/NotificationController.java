@@ -4,6 +4,7 @@ import com.mog.project.domain.notification.dto.response.NotificationListResponse
 import com.mog.project.domain.notification.service.NotificationService;
 import com.mog.project.global.response.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -23,11 +24,21 @@ public class NotificationController {
 
     @Operation(
             summary = "SSE 연결 수립",
-            description = "SSE 연결을 수립합니다. 연결 후 이벤트 발생 시 실시간으로 알림을 수신합니다.",
-            security = @SecurityRequirement(name = "bearerAuth")
+            description = "SSE 연결을 수립합니다. 연결 후 이벤트 발생 시 실시간으로 알림을 수신합니다.\n\n" +
+                    "**인증 방식 주의**: 브라우저 `EventSource`는 `Authorization` 헤더를 지원하지 않습니다.\n\n" +
+                    "- `?token={accessToken}` 쿼리 파라미터로 JWT를 전달해야 합니다.\n" +
+                    "- 예시: `GET /api/v1/notifications/subscribe?token=eyJhbGci...`\n\n" +
+                    "**이벤트 종류**\n" +
+                    "- `connect`: 연결 직후 1회 전송\n" +
+                    "- `notification`: 알림 발생 시 전송\n" +
+                    "- `heartbeat`: 30초마다 연결 유지용 전송"
     )
     @GetMapping(value = "/subscribe", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public SseEmitter subscribe(@AuthenticationPrincipal String kakaoId) {
+    public SseEmitter subscribe(
+            @Parameter(description = "JWT 액세스 토큰 (EventSource는 헤더 미지원으로 쿼리 파라미터로 전달)", required = true)
+            @RequestParam String token,
+            @AuthenticationPrincipal String kakaoId
+    ) {
         return notificationService.subscribe(kakaoId);
     }
 
