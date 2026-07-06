@@ -179,7 +179,7 @@ public class MeetingRecordService {
     private void notifyRoomMembers(Long roomId, int seq) {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new GlobalException(ErrorCode.ROOM_NOT_FOUND));
-        String message = "[" + room.getRoomName() + "]" + seq + "차 기록이 추가됐습니다.";
+        String message = "[" + room.getRoomName() + "] " + seq + "차 기록이 추가됐습니다.";
         groupMemberRepository.findByGroupGroupId(room.getGroup().getGroupId())
                 .forEach(gm -> notificationService.send(
                         gm.getUser().getUserId(),

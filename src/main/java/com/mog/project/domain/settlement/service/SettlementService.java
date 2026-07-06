@@ -42,6 +42,7 @@ public class SettlementService {
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
     private final GroupMemberRepository groupMemberRepository;
+    private final NotificationService notificationService;
 
     // 정산 계산 및 생성
     // 방 멤버라면 누구나 호출이 되고, 이미 존재하면 삭제 후 재생성
@@ -161,6 +162,15 @@ public class SettlementService {
         }
 
         settlement.confirm();
+
+        String message = "[" + room.getRoomName() + "] 정산이 완료됐습니다.";
+        groupMemberRepository.findByGroupGroupId(groupId)
+                .forEach(gm -> notificationService.send(
+                        gm.getUser().getUserId(),
+                        NotificationType.SETTLEMENT_DONE,
+                        message,
+                        roomId
+                ));
 
         List<MeetingRecord> records = meetingRecordRepository.findByRoomId(roomId);
         List<MeetingMemberCost> allCosts = meetingMemberCostRepository.findByMeetingRecordIn(records);

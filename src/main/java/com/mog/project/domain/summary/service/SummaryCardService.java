@@ -14,6 +14,8 @@ import com.mog.project.domain.schedule.repository.ConfirmedScheduleRepository;
 import com.mog.project.domain.settlement.entity.Settlement;
 import com.mog.project.domain.settlement.repository.MemberSettlementRepository;
 import com.mog.project.domain.settlement.repository.SettlementRepository;
+import com.mog.project.domain.notification.entity.NotificationType;
+import com.mog.project.domain.notification.service.NotificationService;
 import com.mog.project.domain.summary.dto.response.*;
 import com.mog.project.domain.summary.entity.SummaryCard;
 import com.mog.project.domain.summary.repository.SummaryCardRepository;
@@ -49,6 +51,7 @@ public class SummaryCardService {
     private final MemberSettlementRepository memberSettlementRepository;
     private final SummaryCardRepository summaryCardRepository;
     private final S3Service s3Service;
+    private final NotificationService notificationService;
 
     public SummaryCardResponse getSummaryData(Long roomId, String kakaoId) {
         Room room = getRoom(roomId);
@@ -125,6 +128,16 @@ public class SummaryCardService {
                         .build()
                 )
         );
+
+        String message = "[" + room.getRoomName() + "] 요약 카드가 생성됐습니다.";
+        groupMemberRepository.findByGroupGroupId(groupId)
+                .forEach(gm -> notificationService.send(
+                        gm.getUser().getUserId(),
+                        NotificationType.SUMMARY_READY,
+                        message,
+                        roomId
+                ));
+
         return new CardImageResponse(s3Url);
     }
 
