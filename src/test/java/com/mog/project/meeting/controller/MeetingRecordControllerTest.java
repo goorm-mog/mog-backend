@@ -51,7 +51,7 @@ class MeetingRecordControllerTest {
     @Test
     void getRecords_200_반환() throws Exception {
         MeetingRecordListResponse response = new MeetingRecordListResponse(List.of(), List.of());
-        when(meetingRecordService.getRecords(1L)).thenReturn(response);
+        when(meetingRecordService.getRecords(eq(1L), any())).thenReturn(response);
 
         mockMvc.perform(get("/api/v1/rooms/1/records"))
                 .andExpect(status().isOk())
@@ -65,7 +65,7 @@ class MeetingRecordControllerTest {
 
     @Test
     void createRecord_201_반환() throws Exception {
-        when(meetingRecordService.createRecord(eq(1L), any())).thenReturn(sampleResponse());
+        when(meetingRecordService.createRecord(eq(1L), any(), any())).thenReturn(sampleResponse());
 
         MeetingRecordCreateRequest request = new MeetingRecordCreateRequest(
                 "강남", null, null,
@@ -136,7 +136,7 @@ class MeetingRecordControllerTest {
         MeetingRecordResponse updated = new MeetingRecordResponse(
                 1L, 1, "수정된 장소", null, 0, null, List.of(), LocalDateTime.now()
         );
-        when(meetingRecordService.updateRecord(eq(1L), eq(1L), any())).thenReturn(updated);
+        when(meetingRecordService.updateRecord(eq(1L), eq(1L), any(), any())).thenReturn(updated);
 
         mockMvc.perform(patch("/api/v1/rooms/1/records/1")
                         .with(csrf())
@@ -152,7 +152,7 @@ class MeetingRecordControllerTest {
 
     @Test
     void deleteRecord_200_반환() throws Exception {
-        doNothing().when(meetingRecordService).deleteRecord(1L, 1L);
+        doNothing().when(meetingRecordService).deleteRecord(eq(1L), eq(1L), any());
 
         mockMvc.perform(delete("/api/v1/rooms/1/records/1")
                         .with(csrf()))

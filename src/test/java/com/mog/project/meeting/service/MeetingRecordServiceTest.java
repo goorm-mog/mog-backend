@@ -4,9 +4,12 @@ import com.mog.project.domain.groups.entity.GroupMember;
 import com.mog.project.domain.groups.repository.GroupMemberRepository;
 import com.mog.project.domain.meeting.service.MeetingRecordService;
 import com.mog.project.domain.meeting.service.RoomPhotoService;
+import com.mog.project.domain.notification.service.NotificationService;
 import com.mog.project.domain.room.entity.Room;
 import com.mog.project.domain.room.repository.RoomRepository;
 import com.mog.project.domain.groups.entity.Group;
+import com.mog.project.domain.user.entity.User;
+import com.mog.project.domain.user.repository.UserRepository;
 import com.mog.project.global.exception.GlobalException;
 import com.mog.project.domain.meeting.dto.request.MeetingRecordCreateRequest;
 import com.mog.project.domain.meeting.dto.request.MeetingRecordUpdateRequest;
@@ -40,6 +43,8 @@ class MeetingRecordServiceTest {
     @Mock RoomPhotoService roomPhotoService;
     @Mock RoomRepository roomRepository;
     @Mock GroupMemberRepository groupMemberRepository;
+    @Mock UserRepository userRepository;
+    @Mock NotificationService notificationService;
     @InjectMocks MeetingRecordService meetingRecordService;
 
     private MeetingRecord record;
@@ -50,13 +55,19 @@ class MeetingRecordServiceTest {
                 .roomId(1L).seq(1).placeName("강남").memo("첫 만남").build();
         ReflectionTestUtils.setField(record, "id", 1L);
 
-        // buildNicknameMap() 호출 시 NPE 방지용 공통 mock 설정
-        // lenient: deleteRecord 등 buildNicknameMap을 호출하지 않는 테스트에서 불필요한 stub 경고 방지
+        // buildNicknameMap() + checkMembership() + notifyRoomMembers() 호출 시 NPE 방지용 공통 mock 설정
+        // lenient: 일부 테스트에서 호출되지 않는 stub에 대한 경고 방지
         Room mockRoom = mock(Room.class);
         Group mockGroup = mock(Group.class);
+        User mockUser = mock(User.class);
+        GroupMember mockGroupMember = mock(GroupMember.class);
         lenient().when(mockRoom.getGroup()).thenReturn(mockGroup);
         lenient().when(mockGroup.getGroupId()).thenReturn(1L);
+        lenient().when(mockUser.getUserId()).thenReturn(1L);
         lenient().when(roomRepository.findById(1L)).thenReturn(Optional.of(mockRoom));
+        lenient().when(userRepository.findByKakaoId(any())).thenReturn(Optional.of(mockUser));
+        lenient().when(groupMemberRepository.findByGroupGroupIdAndUserUserId(anyLong(), anyLong()))
+                .thenReturn(Optional.of(mockGroupMember));
         lenient().when(groupMemberRepository.findByGroupGroupId(1L)).thenReturn(List.of());
     }
 
@@ -68,7 +79,7 @@ class MeetingRecordServiceTest {
         when(meetingMemberCostRepository.findByMeetingRecordIn(List.of())).thenReturn(List.of());
         when(roomPhotoService.getPhotos(1L)).thenReturn(List.of());
 
-        MeetingRecordListResponse response = meetingRecordService.getRecords(1L);
+        MeetingRecordListResponse response = meetingRecordService.getRecords(1L, "kakaoId");
 
         assertThat(response.records()).isEmpty();
         assertThat(response.photos()).isEmpty();
@@ -80,7 +91,7 @@ class MeetingRecordServiceTest {
         when(meetingMemberCostRepository.findByMeetingRecordIn(List.of(record))).thenReturn(List.of());
         when(roomPhotoService.getPhotos(1L)).thenReturn(List.of());
 
-        MeetingRecordListResponse response = meetingRecordService.getRecords(1L);
+        MeetingRecordListResponse response = meetingRecordService.getRecords(1L, "kakaoId");
 
         assertThat(response.records()).hasSize(1);
         assertThat(response.records().get(0).placeName()).isEqualTo("강남");
@@ -99,7 +110,7 @@ class MeetingRecordServiceTest {
                 List.of(new ParticipantRequest(100L, 10000))
         );
 
-        assertThat(meetingRecordService.createRecord(1L, request).seq()).isEqualTo(3);
+        assertThat(meetingRecordService.createRecord(1L, "kakaoId", request).seq()).isEqualTo(3);
     }
 
     @Test
@@ -113,7 +124,7 @@ class MeetingRecordServiceTest {
                 List.of(new ParticipantRequest(100L, 5000))
         );
 
-        assertThat(meetingRecordService.createRecord(1L, request).seq()).isEqualTo(1);
+        assertThat(meetingRecordService.createRecord(1L, "kakaoId", request).seq()).isEqualTo(1);
     }
 
     @Test
@@ -130,7 +141,7 @@ class MeetingRecordServiceTest {
                 )
         );
 
-        MeetingRecordResponse response = meetingRecordService.createRecord(1L, request);
+        MeetingRecordResponse response = meetingRecordService.createRecord(1L, "kakaoId", request);
 
         assertThat(response.totalCost()).isEqualTo(25000);
         assertThat(response.participants()).hasSize(2);
@@ -143,7 +154,7 @@ class MeetingRecordServiceTest {
         when(meetingRecordRepository.findByIdAndRoomId(99L, 1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() ->
-                meetingRecordService.updateRecord(1L, 99L,
+                meetingRecordService.updateRecord(1L, 99L, "kakaoId",
                         new MeetingRecordUpdateRequest(null, null, null, null)))
                 .isInstanceOf(GlobalException.class);
     }
@@ -153,7 +164,7 @@ class MeetingRecordServiceTest {
         when(meetingRecordRepository.findByIdAndRoomId(1L, 1L)).thenReturn(Optional.of(record));
         when(meetingMemberCostRepository.findByMeetingRecordIn(List.of(record))).thenReturn(List.of());
 
-        meetingRecordService.updateRecord(1L, 1L,
+        meetingRecordService.updateRecord(1L, 1L, "kakaoId",
                 new MeetingRecordUpdateRequest(null, null, null, null));
 
         verify(meetingMemberCostRepository, never()).deleteByMeetingRecord(any());
@@ -164,7 +175,7 @@ class MeetingRecordServiceTest {
         when(meetingRecordRepository.findByIdAndRoomId(1L, 1L)).thenReturn(Optional.of(record));
         when(meetingMemberCostRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
 
-        meetingRecordService.updateRecord(1L, 1L,
+        meetingRecordService.updateRecord(1L, 1L, "kakaoId",
                 new MeetingRecordUpdateRequest(null, null, null,
                         List.of(new ParticipantRequest(200L, 20000))));
 
@@ -178,7 +189,7 @@ class MeetingRecordServiceTest {
     void deleteRecord_존재하지_않는_기록이면_예외() {
         when(meetingRecordRepository.findByIdAndRoomId(99L, 1L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> meetingRecordService.deleteRecord(1L, 99L))
+        assertThatThrownBy(() -> meetingRecordService.deleteRecord(1L, 99L, "kakaoId"))
                 .isInstanceOf(GlobalException.class);
     }
 
@@ -186,7 +197,7 @@ class MeetingRecordServiceTest {
     void deleteRecord_MeetingMemberCost를_먼저_삭제_후_MeetingRecord_삭제() {
         when(meetingRecordRepository.findByIdAndRoomId(1L, 1L)).thenReturn(Optional.of(record));
 
-        meetingRecordService.deleteRecord(1L, 1L);
+        meetingRecordService.deleteRecord(1L, 1L, "kakaoId");
 
         InOrder inOrder = inOrder(meetingMemberCostRepository, meetingRecordRepository);
         inOrder.verify(meetingMemberCostRepository).deleteByMeetingRecord(record);
@@ -200,7 +211,7 @@ class MeetingRecordServiceTest {
         ReflectionTestUtils.setField(seq2Record, "id", 2L);
         when(meetingRecordRepository.findByIdAndRoomId(2L, 1L)).thenReturn(Optional.of(seq2Record));
 
-        meetingRecordService.deleteRecord(1L, 2L);
+        meetingRecordService.deleteRecord(1L, 2L, "kakaoId");
 
         verify(meetingRecordRepository).decreaseSeqAfter(1L, 2);
     }
