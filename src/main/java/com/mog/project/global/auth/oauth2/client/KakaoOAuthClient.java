@@ -3,6 +3,7 @@ package com.mog.project.global.auth.oauth2.client;
 import com.mog.project.global.exception.AuthException;
 import com.mog.project.global.exception.ErrorCode;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -10,7 +11,9 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.client.RestClientResponseException;
 
+@Slf4j
 @Component
 public class KakaoOAuthClient {
 
@@ -48,7 +51,13 @@ public class KakaoOAuthClient {
                 .body(Map.class);
 
             return (String) response.get("access_token");
+        } catch (RestClientResponseException e) {
+            // 카카오가 반환한 실제 에러(KOE 코드) 확인용
+            log.error("Kakao token exchange failed: status={}, body={}, redirectUri={}",
+                e.getStatusCode(), e.getResponseBodyAsString(), redirectUri);
+            throw new AuthException(ErrorCode.INVALID_KAKAO_TOKEN);
         } catch (RestClientException e) {
+            log.error("Kakao token exchange request failed (no response)", e);
             throw new AuthException(ErrorCode.INVALID_KAKAO_TOKEN);
         }
     }
