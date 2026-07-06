@@ -39,7 +39,7 @@ public class RoomController {
         description = "그룹 멤버가 약속 방을 생성합니다.",
         security = @SecurityRequirement(name = "bearerAuth")
     )
-    @PostMapping("/{group}/rooms")
+    @PostMapping("/{groupId}/rooms")
     public ResponseEntity<ApiResponse<RoomCreateResponse>> creatRoom(
         @AuthenticationPrincipal String kakaoId,
         @PathVariable Long groupId,
