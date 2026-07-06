@@ -47,10 +47,15 @@ public class JwtFilter extends OncePerRequestFilter {
     }
 
     private String resolveToken(HttpServletRequest request) {
+        // 일반 요청: Authorization 헤더에서 추출
         String bearer = request.getHeader("Authorization");
-        // "Bearer " 접두사 제거 후 토큰만 반환
         if (bearer != null && bearer.startsWith("Bearer ")) {
             return bearer.substring(7);
+        }
+        // SSE 요청
+        String queryToken = request.getParameter("token");
+        if (queryToken != null && !queryToken.isBlank()) {
+            return queryToken;
         }
         return null;
     }

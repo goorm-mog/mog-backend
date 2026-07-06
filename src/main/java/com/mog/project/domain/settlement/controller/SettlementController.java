@@ -54,10 +54,11 @@ public class SettlementController {
     @GetMapping
     public ResponseEntity<ApiResponse<SettlementResponse>> getSettlement(
             @Parameter(description = "방 ID", example = "1")
-            @PathVariable Long roomId
+            @PathVariable Long roomId,
+            @AuthenticationPrincipal String kakaoId
     ) {
         return ResponseEntity.ok(
-                ApiResponse.success("정산을 조회했습니다.", settlementService.getSettlement(roomId))
+                ApiResponse.success("정산을 조회했습니다.", settlementService.getSettlement(roomId, kakaoId))
         );
     }
 

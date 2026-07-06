@@ -3,6 +3,8 @@ package com.mog.project.domain.settlement.service;
 import com.mog.project.domain.groups.entity.GroupMember;
 import com.mog.project.domain.groups.entity.GroupMemberRole;
 import com.mog.project.domain.groups.repository.GroupMemberRepository;
+import com.mog.project.domain.notification.entity.NotificationType;
+import com.mog.project.domain.notification.service.NotificationService;
 import com.mog.project.domain.meeting.entity.MeetingMemberCost;
 import com.mog.project.domain.meeting.entity.MeetingRecord;
 import com.mog.project.domain.meeting.repository.MeetingMemberCostRepository;
@@ -40,6 +42,7 @@ public class SettlementService {
     private final RoomRepository roomRepository;
     private final UserRepository userRepository;
     private final GroupMemberRepository groupMemberRepository;
+    private final NotificationService notificationService;
 
     // 정산 계산 및 생성
     // 방 멤버라면 누구나 호출이 되고, 이미 존재하면 삭제 후 재생성
@@ -106,9 +109,14 @@ public class SettlementService {
         return buildResponse(settlement, costsByMember, nicknameMap);
     }
 
-    public SettlementResponse getSettlement(Long roomId) {
+    public SettlementResponse getSettlement(Long roomId, String kakaoId) {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new GlobalException(ErrorCode.ROOM_NOT_FOUND));
+
+        User user = userRepository.findByKakaoId(kakaoId)
+                .orElseThrow(() -> new GlobalException(ErrorCode.FORBIDDEN));
+        groupMemberRepository.findByGroupGroupIdAndUserUserId(room.getGroup().getGroupId(), user.getUserId())
+                .orElseThrow(() -> new GlobalException(ErrorCode.FORBIDDEN));
 
         Settlement settlement = settlementRepository.findByRoomId(roomId)
                 .orElseThrow(() -> new GlobalException(ErrorCode.SETTLEMENT_NOT_FOUND));
@@ -154,6 +162,15 @@ public class SettlementService {
         }
 
         settlement.confirm();
+
+        String message = "[" + room.getRoomName() + "] 정산이 완료됐습니다.";
+        groupMemberRepository.findByGroupGroupId(groupId)
+                .forEach(gm -> notificationService.send(
+                        gm.getUser().getUserId(),
+                        NotificationType.SETTLEMENT_DONE,
+                        message,
+                        roomId
+                ));
 
         List<MeetingRecord> records = meetingRecordRepository.findByRoomId(roomId);
         List<MeetingMemberCost> allCosts = meetingMemberCostRepository.findByMeetingRecordIn(records);

@@ -94,7 +94,7 @@ class SettlementControllerTest {
 
     @Test
     void getSettlement_성공시_200_반환() throws Exception {
-        when(settlementService.getSettlement(1L)).thenReturn(sampleResponse());
+        when(settlementService.getSettlement(eq(1L), any())).thenReturn(sampleResponse());
 
         mockMvc.perform(get("/api/v1/rooms/1/settlement"))
                 .andExpect(status().isOk())
@@ -107,7 +107,7 @@ class SettlementControllerTest {
 
     @Test
     void getSettlement_정산_없으면_404() throws Exception {
-        when(settlementService.getSettlement(1L))
+        when(settlementService.getSettlement(eq(1L), any()))
                 .thenThrow(new GlobalException(ErrorCode.SETTLEMENT_NOT_FOUND));
 
         mockMvc.perform(get("/api/v1/rooms/1/settlement"))
@@ -116,7 +116,7 @@ class SettlementControllerTest {
 
     @Test
     void getSettlement_존재하지_않는_방이면_404() throws Exception {
-        when(settlementService.getSettlement(999L))
+        when(settlementService.getSettlement(eq(999L), any()))
                 .thenThrow(new GlobalException(ErrorCode.ROOM_NOT_FOUND));
 
         mockMvc.perform(get("/api/v1/rooms/999/settlement"))

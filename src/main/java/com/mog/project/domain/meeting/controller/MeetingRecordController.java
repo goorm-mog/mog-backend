@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import com.mog.project.domain.meeting.dto.response.OcrResponse;
 import com.mog.project.domain.meeting.service.OcrService;
@@ -39,9 +40,10 @@ public class MeetingRecordController {
     )
     @GetMapping
     public ResponseEntity<ApiResponse<MeetingRecordListResponse>> getRecords(
-            @Parameter(description = "방 ID", example = "1") @PathVariable Long roomId
+            @Parameter(description = "방 ID", example = "1") @PathVariable Long roomId,
+            @AuthenticationPrincipal String kakaoId
     ) {
-        return ResponseEntity.ok(ApiResponse.success("만남 기록 목록을 조회했습니다.", meetingRecordService.getRecords(roomId)));
+        return ResponseEntity.ok(ApiResponse.success("만남 기록 목록을 조회했습니다.", meetingRecordService.getRecords(roomId, kakaoId)));
     }
 
     @Operation(
@@ -55,10 +57,11 @@ public class MeetingRecordController {
     @PostMapping
     public ResponseEntity<ApiResponse<MeetingRecordResponse>> createRecord(
             @Parameter(description = "방 ID", example = "1") @PathVariable Long roomId,
+            @AuthenticationPrincipal String kakaoId,
             @RequestBody @Valid MeetingRecordCreateRequest request
     ) {
         return ResponseEntity.status(201).body(
-                ApiResponse.success("만남 기록을 생성했습니다.", meetingRecordService.createRecord(roomId, request))
+                ApiResponse.success("만남 기록을 생성했습니다.", meetingRecordService.createRecord(roomId, kakaoId, request))
         );
     }
 
@@ -73,10 +76,11 @@ public class MeetingRecordController {
     public ResponseEntity<ApiResponse<MeetingRecordResponse>> updateRecord(
             @Parameter(description = "방 ID", example = "1") @PathVariable Long roomId,
             @Parameter(description = "수정할 기록 ID", example = "3") @PathVariable Long recordId,
+            @AuthenticationPrincipal String kakaoId,
             @RequestBody @Valid MeetingRecordUpdateRequest request
     ) {
         return ResponseEntity.ok(
-                ApiResponse.success("만남 기록을 수정했습니다.", meetingRecordService.updateRecord(roomId, recordId, request))
+                ApiResponse.success("만남 기록을 수정했습니다.", meetingRecordService.updateRecord(roomId, recordId, kakaoId, request))
         );
     }
 
@@ -89,9 +93,10 @@ public class MeetingRecordController {
     @DeleteMapping("/{recordId}")
     public ResponseEntity<ApiResponse<Void>> deleteRecord(
             @Parameter(description = "방 ID", example = "1") @PathVariable Long roomId,
-            @Parameter(description = "삭제할 기록 ID", example = "3") @PathVariable Long recordId
+            @Parameter(description = "삭제할 기록 ID", example = "3") @PathVariable Long recordId,
+            @AuthenticationPrincipal String kakaoId
     ) {
-        meetingRecordService.deleteRecord(roomId, recordId);
+        meetingRecordService.deleteRecord(roomId, recordId, kakaoId);
         return ResponseEntity.ok(ApiResponse.success("만남 기록을 삭제했습니다."));
     }
 
