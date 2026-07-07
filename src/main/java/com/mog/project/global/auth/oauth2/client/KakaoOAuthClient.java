@@ -3,8 +3,7 @@ package com.mog.project.global.auth.oauth2.client;
 import com.mog.project.global.exception.AuthException;
 import com.mog.project.global.exception.ErrorCode;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -14,10 +13,10 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 
+@Slf4j
 @Component
 public class KakaoOAuthClient {
 
-    private static final Logger log = LoggerFactory.getLogger(KakaoOAuthClient.class);
     private static final String KAKAO_TOKEN_URL = "https://kauth.kakao.com/oauth/token";
 
     private final RestClient restClient;
@@ -60,11 +59,12 @@ public class KakaoOAuthClient {
                 response.get("expires_in") == null ? null : ((Number) response.get("expires_in")).longValue()
             );
         } catch (RestClientResponseException e) {
-            log.warn("카카오 토큰 교환 실패: status={}, body={}, redirectUri={}",
+            // 카카오가 반환한 실제 에러(KOE 코드) 확인용
+            log.error("Kakao token exchange failed: status={}, body={}, redirectUri={}",
                 e.getStatusCode(), e.getResponseBodyAsString(), redirectUri);
             throw new AuthException(ErrorCode.INVALID_KAKAO_TOKEN);
         } catch (RestClientException e) {
-            log.warn("카카오 토큰 교환 통신 실패: redirectUri={}", redirectUri, e);
+            log.error("Kakao token exchange request failed (no response)", e);
             throw new AuthException(ErrorCode.INVALID_KAKAO_TOKEN);
         }
     }
