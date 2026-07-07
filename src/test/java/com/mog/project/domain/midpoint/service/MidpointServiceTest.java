@@ -48,6 +48,7 @@ class MidpointServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private RoomRepository roomRepository;
     @Mock private KakaoMobilityClient kakaoMobilityClient;
+    @Mock private MidpointWebSocketPublisher midpointWebSocketPublisher;
  
     @InjectMocks
     private MidpointService midpointService;
@@ -107,6 +108,7 @@ class MidpointServiceTest {
         given(userRepository.findByKakaoId(kakaoId)).willReturn(Optional.of(user));
         given(departureLocationRepository.existsByRoomIdAndUserId(roomId, userId)).willReturn(false);
         given(departureLocationRepository.save(any())).willReturn(mockDeparture(userId));
+        given(departureLocationRepository.findAllByRoomId(roomId)).willReturn(List.of(mockDeparture(userId)));
  
         DepartureLocationRequest request = new DepartureLocationRequest(
                 "강남역", "서울 강남구 강남대로 396",
@@ -119,6 +121,7 @@ class MidpointServiceTest {
         // then
         assertThat(response.placeName()).isEqualTo("강남역");
         verify(departureLocationRepository, times(1)).save(any());
+        verify(midpointWebSocketPublisher, times(1)).publishDepartureUpdate(any(), any());
     }
  
     @Test
@@ -151,6 +154,7 @@ class MidpointServiceTest {
         DepartureLocation departure = mockDeparture(userId);
         given(userRepository.findByKakaoId(kakaoId)).willReturn(Optional.of(user));
         given(departureLocationRepository.findByRoomIdAndUserId(roomId, userId)).willReturn(Optional.of(departure));
+        given(departureLocationRepository.findAllByRoomId(roomId)).willReturn(List.of(departure));
  
         DepartureLocationRequest request = new DepartureLocationRequest(
                 "선릉역", "서울 강남구 테헤란로 211",
@@ -163,6 +167,7 @@ class MidpointServiceTest {
         // then
         assertThat(response.placeName()).isEqualTo("선릉역");
         assertThat(response.transportType()).isEqualTo("CAR");
+        verify(midpointWebSocketPublisher, times(1)).publishDepartureUpdate(any(), any());
     }
  
     @Test
@@ -202,10 +207,10 @@ class MidpointServiceTest {
     }
  
     // ──────────────────────────────────────────
-    // 4. 중간지점 + 소요시간 계산 (통합)
+    // 4. 중간지점 + 소요시간 계산
     // ──────────────────────────────────────────
     @Test
-    @DisplayName("중간지점 + 소요시간 계산 성공 - 처음 계산")
+    @DisplayName("중간지점 + 소요시간 계산 성공")
     void calculateMiddlePoint_success_new() {
         // given
         User user = mockUser();
@@ -241,6 +246,7 @@ class MidpointServiceTest {
         assertThat(response.travelTimes().get(0).durationMinutes()).isEqualTo(23);
         verify(middlePointRepository, times(1)).save(any());
         verify(travelTimeRepository, times(1)).save(any());
+        verify(midpointWebSocketPublisher, times(1)).publishMiddlePoint(any(), any());
     }
  
     @Test
@@ -319,7 +325,7 @@ class MidpointServiceTest {
     // 6. 장소 확정
     // ──────────────────────────────────────────
     @Test
-    @DisplayName("장소 확정 성공 - 처음 확정")
+    @DisplayName("장소 확정 성공")
     void confirmPlace_success_new() {
         // given
         User user = mockUser();
@@ -351,6 +357,7 @@ class MidpointServiceTest {
         // then
         assertThat(response.placeName()).isEqualTo("스시조");
         verify(confirmedPlaceRepository, times(1)).save(any());
+        verify(midpointWebSocketPublisher, times(1)).publishConfirmedPlace(any(), any());
     }
  
     @Test

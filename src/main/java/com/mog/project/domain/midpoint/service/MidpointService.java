@@ -35,8 +35,8 @@ import java.util.Objects;
 @Transactional(readOnly = true)
 public class MidpointService {
  
-    private static final int MAX_ITERATIONS = 3;  // 이진 탐색 반복 횟수
-    private static final double MOVE_RATIO = 0.3;  // 후보 지점 이동 비율
+    private static final int MAX_ITERATIONS = 3;
+    private static final double MOVE_RATIO = 0.3;
  
     private final DepartureLocationRepository departureLocationRepository;
     private final MiddlePointRepository middlePointRepository;
@@ -45,6 +45,7 @@ public class MidpointService {
     private final UserRepository userRepository;
     private final RoomRepository roomRepository;
     private final KakaoMobilityClient kakaoMobilityClient;
+    private final MidpointWebSocketPublisher midpointWebSocketPublisher;
  
     // kakaoId → User 변환 공통 메서드
     private User getUser(String kakaoId) {
@@ -87,7 +88,12 @@ public class MidpointService {
                 .transportType(request.transportType())
                 .build();
  
-        return DepartureLocationResponse.from(departureLocationRepository.save(departure));
+        DepartureLocationResponse response = DepartureLocationResponse.from(departureLocationRepository.save(departure));
+ 
+        // 출발지 목록 WS 브로드캐스트
+        midpointWebSocketPublisher.publishDepartureUpdate(roomId, getDepartures(roomId));
+ 
+        return response;
     }
  
     // ──────────────────────────────────────────
@@ -108,7 +114,12 @@ public class MidpointService {
                 request.transportType()
         );
  
-        return DepartureLocationResponse.from(departure);
+        DepartureLocationResponse response = DepartureLocationResponse.from(departure);
+ 
+        // 출발지 목록 WS 브로드캐스트
+        midpointWebSocketPublisher.publishDepartureUpdate(roomId, getDepartures(roomId));
+ 
+        return response;
     }
  
     // ──────────────────────────────────────────
@@ -166,7 +177,6 @@ public class MidpointService {
                 }
             }
  
-            // 소요시간이 가장 긴 출발지 방향으로 후보 지점 이동
             if (farthest != null) {
                 candidateLat = candidateLat.add(
                         farthest.getLatitude().subtract(candidateLat)
@@ -180,10 +190,10 @@ public class MidpointService {
             }
         }
  
-        // 5단계: 중간지점 저장 (upsert)
         final BigDecimal finalLat = candidateLat;
         final BigDecimal finalLng = candidateLng;
  
+        // 5단계: 중간지점 저장 (upsert)
         MiddlePoint middlePoint = middlePointRepository.findByRoomId(roomId)
                 .map(existing -> {
                     existing.update(finalLat, finalLng);
@@ -222,7 +232,12 @@ public class MidpointService {
         }
  
         List<TravelTime> travelTimes = travelTimeRepository.findAllByRoomId(roomId);
-        return MiddlePointResponse.from(middlePoint, travelTimes);
+        MiddlePointResponse response = MiddlePointResponse.from(middlePoint, travelTimes);
+ 
+        // 중간지점 + 소요시간 WS 브로드캐스트
+        midpointWebSocketPublisher.publishMiddlePoint(roomId, response);
+ 
+        return response;
     }
  
     // ──────────────────────────────────────────
@@ -268,6 +283,11 @@ public class MidpointService {
                                 .build()
                 ));
  
-        return ConfirmedPlaceResponse.from(confirmedPlace);
+        ConfirmedPlaceResponse response = ConfirmedPlaceResponse.from(confirmedPlace);
+ 
+        // 장소 확정 WS 브로드캐스트
+        midpointWebSocketPublisher.publishConfirmedPlace(roomId, response);
+ 
+        return response;
     }
 }
