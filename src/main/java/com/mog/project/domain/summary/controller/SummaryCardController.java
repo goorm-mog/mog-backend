@@ -30,7 +30,7 @@ public class SummaryCardController {
             description = "요약 카드를 구성하는 전체 데이터를 반환합니다.\n\n" +
                     "- 정산이 확정된 방에서만 조회할 수 있습니다 → 미확정 시 `SETTLEMENT_NOT_CONFIRMED` 에러\n" +
                     "- `confirmedDate`: 일정 조율로 확정된 날짜 (미확정이면 null)\n" +
-                    "- `confirmedPlace`: 확정된 만날 장소 (추후 구현, 현재 null)\n" +
+                    "- `confirmedPlace`: 확정된 만날 장소 (placeName, address 포함 / 미확정 혹은 문제 발생 시 null 반환)\n" +
                     "- `cardImageUrl`: 저장된 카드 이미지 URL (저장 전이면 null)",
             security = @SecurityRequirement(name = "bearerAuth")
     )

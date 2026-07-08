@@ -8,6 +8,7 @@ import com.mog.project.domain.meeting.entity.RoomPhoto;
 import com.mog.project.domain.meeting.repository.MeetingMemberCostRepository;
 import com.mog.project.domain.meeting.repository.MeetingRecordRepository;
 import com.mog.project.domain.meeting.repository.RoomPhotoRepository;
+import com.mog.project.domain.midpoint.repository.ConfirmedPlaceRepository;
 import com.mog.project.domain.room.entity.Room;
 import com.mog.project.domain.room.repository.RoomRepository;
 import com.mog.project.domain.schedule.repository.ConfirmedScheduleRepository;
@@ -52,6 +53,7 @@ public class SummaryCardService {
     private final SummaryCardRepository summaryCardRepository;
     private final S3Service s3Service;
     private final NotificationService notificationService;
+    private final ConfirmedPlaceRepository confirmedPlaceRepository;
 
     public SummaryCardResponse getSummaryData(Long roomId, String kakaoId) {
         Room room = getRoom(roomId);
@@ -92,10 +94,14 @@ public class SummaryCardService {
                 .map(SummaryCard::getS3Url)
                 .orElse(null);
 
+        SummaryPlaceResponse confirmedPlace = confirmedPlaceRepository.findByRoomId(roomId)
+                .map(cp -> new SummaryPlaceResponse(cp.getPlaceName(), cp.getAddress()))
+                .orElse(null);
+
         return new SummaryCardResponse(
                 roomId,
                 confirmedDate,
-                null, // 중간지점 API 구현 후 연동
+                confirmedPlace, // 중간지점 API 구현 후 연동
                 members.size(),
                 members,
                 photos,
