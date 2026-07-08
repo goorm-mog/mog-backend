@@ -6,7 +6,7 @@ import java.util.List;
 public record SummaryCardResponse(
         Long roomId,
         LocalDate confirmedDate,
-        String confirmedPlace,
+        SummaryPlaceResponse confirmedPlace,
         Integer totalMemberCount,
         List<String> members,
         List<String> photos,
