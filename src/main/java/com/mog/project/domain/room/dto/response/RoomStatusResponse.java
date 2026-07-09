@@ -12,6 +12,7 @@ public record RoomStatusResponse (
     List<MemberInfo> members
 ) {
     public record MemberInfo(
+        Long roomMemberId,
         Long userId,
         String nickname,
         boolean isJoined

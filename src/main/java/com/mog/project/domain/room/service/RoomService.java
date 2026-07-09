@@ -111,6 +111,7 @@ public class RoomService {
       List<RoomStatusResponse.MemberInfo> members = roomMemberRepository.findByRoomRoomId(roomId)
           .stream()
           .map(rm -> new RoomStatusResponse.MemberInfo(
+               rm.getRoomMemberId(),
                rm.getUser().getUserId(),
                rm.getUser().getNickname(),
                rm.isJoined()
