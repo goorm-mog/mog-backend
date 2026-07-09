@@ -1,7 +1,7 @@
 spring:
   datasource:
     driver-class-name: org.postgresql.Driver
-    url: jdbc:postgresql://localhost:5432/moge_db
+    url: jdbc:postgresql://localhost:5432/mog_db
     username:         # 로컬 DB 유저명
     password:         # 로컬 DB 비밀번호
 
@@ -35,6 +35,9 @@ spring:
             token-uri: https://kauth.kakao.com/oauth/token
             user-info-uri: https://kapi.kakao.com/v2/user/me
             user-name-attribute: id
+
+kakao:
+  redirect-uri: "http://localhost:5173/oauth/kakao"  # 프론트 카카오 로그인 콜백 라우트 (카카오 콘솔에 등록된 값과 일치해야 함)
 
 logging:
   level:
