@@ -268,10 +268,33 @@ class GroupServiceTest {
         given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(user));
         given(groupRepository.findById(1L)).willReturn(Optional.of(group));
         given(groupMemberRepository.findByGroupGroupIdAndUserUserId(1L, user.getUserId())).willReturn(Optional.of(leader));
+        given(roomRepository.findByGroupGroupIdAndDeletedAtIsNull(1L)).willReturn(List.of());
 
         GroupDeleteResponse response = groupService.deleteGroup("kakao-123", 1L);
 
         assertThat(response.deletedAt()).isNotNull();
+        assertThat(group.getDeletedAt()).isNotNull();
+        verify(groupMemberRepository).deleteAllByGroupGroupId(1L);
+    }
+
+    @Test
+    void 그룹_삭제시_하위_방들도_소프트_삭제된다() {
+        User user = user("kakao-123");
+        Group group = group("ABC123", "대학 친구들");
+        GroupMember leader = GroupMember.builder().group(group).user(user).role(GroupMemberRole.LEADER).build();
+        Room room1 = room(group, "강남역 모임");
+        Room room2 = room(group, "홍대 모임");
+
+        given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(user));
+        given(groupRepository.findById(1L)).willReturn(Optional.of(group));
+        given(groupMemberRepository.findByGroupGroupIdAndUserUserId(1L, user.getUserId())).willReturn(Optional.of(leader));
+        given(roomRepository.findByGroupGroupIdAndDeletedAtIsNull(1L)).willReturn(List.of(room1, room2));
+
+        groupService.deleteGroup("kakao-123", 1L);
+
+        assertThat(room1.getDeletedAt()).isNotNull();
+        assertThat(room2.getDeletedAt()).isNotNull();
+        verify(groupMemberRepository).deleteAllByGroupGroupId(1L);
     }
 
     @Test

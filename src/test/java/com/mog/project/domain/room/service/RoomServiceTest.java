@@ -15,6 +15,7 @@ import com.mog.project.domain.room.dto.request.RoomCreateRequest;
 import com.mog.project.domain.room.dto.request.RoomStepRequest;
 import com.mog.project.domain.room.dto.response.RoomCloseResponse;
 import com.mog.project.domain.room.dto.response.RoomCreateResponse;
+import com.mog.project.domain.room.dto.response.RoomDeleteResponse;
 import com.mog.project.domain.room.dto.response.RoomListResponse;
 import com.mog.project.domain.room.dto.response.RoomStatusResponse;
 import com.mog.project.domain.room.dto.response.RoomStepResponse;
@@ -247,10 +248,10 @@ class RoomServiceTest {
                 .isEqualTo(ErrorCode.UNAUTHORIZED_USER));
     }
 
-    // ---- 방 종료 ----
+    // ---- 방 종료(완료) ----
 
     @Test
-    void 방장이_방을_종료하면_소프트_삭제된다() {
+    void 방장이_방을_종료하면_완료_상태로_전환된다() {
         User leader = user("kakao-123");
         ReflectionTestUtils.setField(leader, "userId", 1L);
         Group group = group("ABC123", "대학 친구들");
@@ -262,9 +263,8 @@ class RoomServiceTest {
         RoomCloseResponse response = roomService.closeRoom("kakao-123", 1L);
 
         assertThat(response.status()).isEqualTo(RoomStatus.COMPLETED);
-        assertThat(response.deletedAt()).isNotNull();
         assertThat(room.getStatus()).isEqualTo(RoomStatus.COMPLETED);
-        assertThat(room.getDeletedAt()).isNotNull();
+        assertThat(room.getDeletedAt()).isNull();
     }
 
     @Test
@@ -304,6 +304,81 @@ class RoomServiceTest {
             .isInstanceOf(AuthException.class)
             .satisfies(e -> assertThat(((AuthException) e).getErrorCode())
                 .isEqualTo(ErrorCode.UNAUTHORIZED_USER));
+    }
+
+    // ---- 방 삭제 ----
+
+    @Test
+    void 방장이_방을_삭제하면_소프트_삭제된다() {
+        User leader = user("kakao-123");
+        ReflectionTestUtils.setField(leader, "userId", 1L);
+        Group group = group("ABC123", "대학 친구들");
+        Room room = room(group, leader, "강남역 삼겹살 모임", RoomStatus.RECORDING);
+
+        given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(leader));
+        given(roomRepository.findById(1L)).willReturn(Optional.of(room));
+
+        RoomDeleteResponse response = roomService.deleteRoom("kakao-123", 1L);
+
+        assertThat(response.deletedAt()).isNotNull();
+        assertThat(room.getDeletedAt()).isNotNull();
+        assertThat(room.getStatus()).isEqualTo(RoomStatus.RECORDING);
+    }
+
+    @Test
+    void 방장이_아니면_방_삭제시_NOT_ROOM_LEADER_예외가_발생한다() {
+        User leader = user("kakao-123");
+        ReflectionTestUtils.setField(leader, "userId", 1L);
+        User other = user("kakao-456");
+        ReflectionTestUtils.setField(other, "userId", 2L);
+        Group group = group("ABC123", "대학 친구들");
+        Room room = room(group, leader, "강남역 삼겹살 모임", RoomStatus.RECORDING);
+
+        given(userRepository.findByKakaoId("kakao-456")).willReturn(Optional.of(other));
+        given(roomRepository.findById(1L)).willReturn(Optional.of(room));
+
+        assertThatThrownBy(() -> roomService.deleteRoom("kakao-456", 1L))
+            .isInstanceOf(GlobalException.class)
+            .satisfies(e -> assertThat(((GlobalException) e).getErrorCode())
+                .isEqualTo(ErrorCode.NOT_ROOM_LEADER));
+    }
+
+    @Test
+    void 방_삭제시_존재하지_않는_방이면_ROOM_NOT_FOUND_예외가_발생한다() {
+        given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(user("kakao-123")));
+        given(roomRepository.findById(999L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> roomService.deleteRoom("kakao-123", 999L))
+            .isInstanceOf(GlobalException.class)
+            .satisfies(e -> assertThat(((GlobalException) e).getErrorCode())
+                .isEqualTo(ErrorCode.ROOM_NOT_FOUND));
+    }
+
+    @Test
+    void 방_삭제시_인증되지_않은_유저면_UNAUTHORIZED_USER_예외가_발생한다() {
+        given(userRepository.findByKakaoId("unknown")).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> roomService.deleteRoom("unknown", 1L))
+            .isInstanceOf(AuthException.class)
+            .satisfies(e -> assertThat(((AuthException) e).getErrorCode())
+                .isEqualTo(ErrorCode.UNAUTHORIZED_USER));
+    }
+
+    @Test
+    void 이미_삭제된_방을_삭제하려하면_ROOM_NOT_FOUND_예외가_발생한다() {
+        User leader = user("kakao-123");
+        ReflectionTestUtils.setField(leader, "userId", 1L);
+        Group group = group("ABC123", "대학 친구들");
+        Room room = room(group, leader, "강남역 삼겹살 모임", RoomStatus.RECORDING);
+        room.softDelete();
+
+        given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(leader));
+        given(roomRepository.findById(1L)).willReturn(Optional.of(room));
+
+        assertThatThrownBy(() -> roomService.deleteRoom("kakao-123", 1L))
+            .isInstanceOf(GlobalException.class)
+            .satisfies(e -> assertThat(((GlobalException) e).getErrorCode())
+                .isEqualTo(ErrorCode.ROOM_NOT_FOUND));
     }
 
     // ---- 헬퍼 ----

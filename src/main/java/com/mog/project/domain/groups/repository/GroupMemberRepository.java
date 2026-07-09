@@ -23,5 +23,8 @@ public interface GroupMemberRepository extends JpaRepository<GroupMember, Long>
     // 그룹 상세
     List<GroupMember> findByGroupGroupId(Long groupId);
 
+    // 그룹 삭제 시 소속 멤버 전체 정리
+    void deleteAllByGroupGroupId(Long groupId);
+
     Long user(User user);
 }
