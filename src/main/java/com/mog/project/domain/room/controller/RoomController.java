@@ -118,7 +118,7 @@ public class RoomController {
 
     @Operation(
         summary = "방 삭제",
-        description = "방장이 방을 소프트 삭제합니다. 하위 데이터도 함께 정리됩니다.",
+        description = "방장이 방을 소프트 삭제합니다.",
         security = @SecurityRequirement(name = "bearerAuth")
     )
     @DeleteMapping("/rooms/{roomId}")
@@ -128,7 +128,7 @@ public class RoomController {
     ) {
         RoomDeleteResponse response = roomService.deleteRoom(kakaoId, roomId);
         return ResponseEntity.ok(
-            ApiResponse.success("ROOM_DELETE_SUCCESS", "방 및 하위 데이터가 소프트 삭제 처리되었습니다.", response)
+            ApiResponse.success("ROOM_DELETE_SUCCESS", "방이 소프트 삭제 처리되었습니다.", response)
         );
     }
 }
