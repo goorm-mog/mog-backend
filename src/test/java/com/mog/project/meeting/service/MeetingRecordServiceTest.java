@@ -18,6 +18,7 @@ import com.mog.project.domain.meeting.dto.response.MeetingRecordListResponse;
 import com.mog.project.domain.meeting.dto.response.MeetingRecordResponse;
 import com.mog.project.domain.meeting.entity.MeetingRecord;
 import com.mog.project.domain.meeting.repository.MeetingMemberCostRepository;
+import com.mog.project.domain.meeting.repository.MeetingMenuItemRepository;
 import com.mog.project.domain.meeting.repository.MeetingRecordRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,7 @@ class MeetingRecordServiceTest {
 
     @Mock MeetingRecordRepository meetingRecordRepository;
     @Mock MeetingMemberCostRepository meetingMemberCostRepository;
+    @Mock MeetingMenuItemRepository meetingMenuItemRepository;
     @Mock RoomPhotoService roomPhotoService;
     @Mock RoomRepository roomRepository;
     @Mock GroupMemberRepository groupMemberRepository;
@@ -77,6 +79,7 @@ class MeetingRecordServiceTest {
     void getRecords_빈_방이면_빈_목록_반환() {
         when(meetingRecordRepository.findByRoomId(1L)).thenReturn(List.of());
         when(meetingMemberCostRepository.findByMeetingRecordIn(List.of())).thenReturn(List.of());
+        when(meetingMenuItemRepository.findByMeetingRecordIn(List.of())).thenReturn(List.of());
         when(roomPhotoService.getPhotos(1L)).thenReturn(List.of());
 
         MeetingRecordListResponse response = meetingRecordService.getRecords(1L, "kakaoId");
@@ -89,6 +92,7 @@ class MeetingRecordServiceTest {
     void getRecords_기록이_있으면_placeName_포함하여_반환() {
         when(meetingRecordRepository.findByRoomId(1L)).thenReturn(List.of(record));
         when(meetingMemberCostRepository.findByMeetingRecordIn(List.of(record))).thenReturn(List.of());
+        when(meetingMenuItemRepository.findByMeetingRecordIn(List.of(record))).thenReturn(List.of());
         when(roomPhotoService.getPhotos(1L)).thenReturn(List.of());
 
         MeetingRecordListResponse response = meetingRecordService.getRecords(1L, "kakaoId");
@@ -104,9 +108,10 @@ class MeetingRecordServiceTest {
         when(meetingRecordRepository.findMaxSeqByRoomId(1L)).thenReturn(2);
         when(meetingRecordRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(meetingMemberCostRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(meetingMenuItemRepository.findByMeetingRecordIn(any())).thenReturn(List.of());
 
         MeetingRecordCreateRequest request = new MeetingRecordCreateRequest(
-                "홍대", null, null,
+                "홍대", null, null, null,
                 List.of(new ParticipantRequest(100L, 10000))
         );
 
@@ -118,9 +123,10 @@ class MeetingRecordServiceTest {
         when(meetingRecordRepository.findMaxSeqByRoomId(1L)).thenReturn(0);
         when(meetingRecordRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(meetingMemberCostRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(meetingMenuItemRepository.findByMeetingRecordIn(any())).thenReturn(List.of());
 
         MeetingRecordCreateRequest request = new MeetingRecordCreateRequest(
-                "이태원", null, null,
+                "이태원", null, null, null,
                 List.of(new ParticipantRequest(100L, 5000))
         );
 
@@ -132,9 +138,10 @@ class MeetingRecordServiceTest {
         when(meetingRecordRepository.findMaxSeqByRoomId(1L)).thenReturn(0);
         when(meetingRecordRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
         when(meetingMemberCostRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(meetingMenuItemRepository.findByMeetingRecordIn(any())).thenReturn(List.of());
 
         MeetingRecordCreateRequest request = new MeetingRecordCreateRequest(
-                "건대", null, null,
+                "건대", null, null, null,
                 List.of(
                         new ParticipantRequest(100L, 10000),
                         new ParticipantRequest(200L, 15000)
@@ -155,7 +162,7 @@ class MeetingRecordServiceTest {
 
         assertThatThrownBy(() ->
                 meetingRecordService.updateRecord(1L, 99L, "kakaoId",
-                        new MeetingRecordUpdateRequest(null, null, null, null)))
+                        new MeetingRecordUpdateRequest(null, null, null, null, null)))
                 .isInstanceOf(GlobalException.class);
     }
 
@@ -163,9 +170,10 @@ class MeetingRecordServiceTest {
     void updateRecord_participants_생략하면_기존_참여자_유지() {
         when(meetingRecordRepository.findByIdAndRoomId(1L, 1L)).thenReturn(Optional.of(record));
         when(meetingMemberCostRepository.findByMeetingRecordIn(List.of(record))).thenReturn(List.of());
+        when(meetingMenuItemRepository.findByMeetingRecordIn(any())).thenReturn(List.of());
 
         meetingRecordService.updateRecord(1L, 1L, "kakaoId",
-                new MeetingRecordUpdateRequest(null, null, null, null));
+                new MeetingRecordUpdateRequest(null, null, null, null, null));
 
         verify(meetingMemberCostRepository, never()).deleteByMeetingRecord(any());
     }
@@ -174,9 +182,10 @@ class MeetingRecordServiceTest {
     void updateRecord_participants_포함하면_기존_참여자_전체_교체() {
         when(meetingRecordRepository.findByIdAndRoomId(1L, 1L)).thenReturn(Optional.of(record));
         when(meetingMemberCostRepository.saveAll(any())).thenAnswer(inv -> inv.getArgument(0));
+        when(meetingMenuItemRepository.findByMeetingRecordIn(any())).thenReturn(List.of());
 
         meetingRecordService.updateRecord(1L, 1L, "kakaoId",
-                new MeetingRecordUpdateRequest(null, null, null,
+                new MeetingRecordUpdateRequest(null, null, null, null,
                         List.of(new ParticipantRequest(200L, 20000))));
 
         verify(meetingMemberCostRepository).deleteByMeetingRecord(record);
@@ -199,8 +208,9 @@ class MeetingRecordServiceTest {
 
         meetingRecordService.deleteRecord(1L, 1L, "kakaoId");
 
-        InOrder inOrder = inOrder(meetingMemberCostRepository, meetingRecordRepository);
+        InOrder inOrder = inOrder(meetingMemberCostRepository, meetingMenuItemRepository, meetingRecordRepository);
         inOrder.verify(meetingMemberCostRepository).deleteByMeetingRecord(record);
+        inOrder.verify(meetingMenuItemRepository).deleteByMeetingRecord(record);
         inOrder.verify(meetingRecordRepository).delete(record);
     }
 

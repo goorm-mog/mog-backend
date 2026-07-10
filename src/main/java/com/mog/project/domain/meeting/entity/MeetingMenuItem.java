@@ -1,5 +1,6 @@
 package com.mog.project.domain.meeting.entity;
 
+import com.mog.project.global.entity.BaseEntity;
 import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Builder;
@@ -10,7 +11,7 @@ import lombok.NoArgsConstructor;
 @Table(name = "meeting_menu_item")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class MeetingMenuItem {
+public class MeetingMenuItem extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

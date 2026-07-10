@@ -186,6 +186,7 @@ public class MeetingRecordService {
 
         // FK가 있는 자식을 먼저 삭제 후 부모 삭제
         meetingMemberCostRepository.deleteByMeetingRecord(record);
+        meetingMenuItemRepository.deleteByMeetingRecord(record);
         meetingRecordRepository.delete(record);
 
         // 삭제된 차수들을 -1만큼씩 땡김
