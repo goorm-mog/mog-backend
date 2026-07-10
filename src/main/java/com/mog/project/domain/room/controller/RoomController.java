@@ -4,6 +4,7 @@ import com.mog.project.domain.room.dto.request.RoomCreateRequest;
 import com.mog.project.domain.room.dto.request.RoomStepRequest;
 import com.mog.project.domain.room.dto.response.RoomCloseResponse;
 import com.mog.project.domain.room.dto.response.RoomCreateResponse;
+import com.mog.project.domain.room.dto.response.RoomDeleteResponse;
 import com.mog.project.domain.room.dto.response.RoomListResponse;
 import com.mog.project.domain.room.dto.response.RoomStatusResponse;
 import com.mog.project.domain.room.dto.response.RoomStepResponse;
@@ -100,18 +101,34 @@ public class RoomController {
     }
 
     @Operation(
-        summary = "방 종료",
-        description = "방장이 방을 완료 및 종료(소프트 삭제) 처리합니다.",
+        summary = "방 완료",
+        description = "방장이 방을 완료(COMPLETED) 상태로 전환합니다.",
         security = @SecurityRequirement(name = "bearerAuth")
     )
-    @DeleteMapping("/rooms/{roomId}")
+    @PatchMapping("/rooms/{roomId}/close")
     public ResponseEntity<ApiResponse<RoomCloseResponse>> closeRoom(
         @AuthenticationPrincipal String kakaoId,
         @PathVariable Long roomId
     ) {
         RoomCloseResponse response = roomService.closeRoom(kakaoId, roomId);
         return ResponseEntity.ok(
-            ApiResponse.success("ROOM_CLOSE_SUCCESS", "방이 완료 및 종료 처리(소프트 삭제) 되었습니다.", response)
+            ApiResponse.success("ROOM_CLOSE_SUCCESS", "방이 완료 처리되었습니다.", response)
+        );
+    }
+
+    @Operation(
+        summary = "방 삭제",
+        description = "방장이 방을 소프트 삭제합니다.",
+        security = @SecurityRequirement(name = "bearerAuth")
+    )
+    @DeleteMapping("/rooms/{roomId}")
+    public ResponseEntity<ApiResponse<RoomDeleteResponse>> deleteRoom(
+        @AuthenticationPrincipal String kakaoId,
+        @PathVariable Long roomId
+    ) {
+        RoomDeleteResponse response = roomService.deleteRoom(kakaoId, roomId);
+        return ResponseEntity.ok(
+            ApiResponse.success("ROOM_DELETE_SUCCESS", "방이 소프트 삭제 처리되었습니다.", response)
         );
     }
 }

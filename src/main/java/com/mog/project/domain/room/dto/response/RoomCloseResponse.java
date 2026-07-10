@@ -6,5 +6,5 @@ import java.time.LocalDateTime;
 public record RoomCloseResponse(
     Long roomId,
     RoomStatus status,
-    LocalDateTime deletedAt
+    LocalDateTime completedAt
 ) {}

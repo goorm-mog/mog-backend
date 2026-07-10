@@ -116,7 +116,7 @@ class ChatServiceTest {
         ReflectionTestUtils.setField(sender, "userId", 1L);
         Room deletedRoom = room(RoomStatus.RECORDING);
         ReflectionTestUtils.setField(deletedRoom, "roomId", 1L);
-        deletedRoom.close();
+        deletedRoom.softDelete();
 
         given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(sender));
         given(roomMemberRepository.existsByRoomRoomIdAndUserUserId(1L, 1L)).willReturn(true);

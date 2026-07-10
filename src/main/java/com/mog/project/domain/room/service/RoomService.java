@@ -9,6 +9,7 @@ import com.mog.project.domain.room.dto.request.RoomCreateRequest;
 import com.mog.project.domain.room.dto.request.RoomStepRequest;
 import com.mog.project.domain.room.dto.response.RoomCloseResponse;
 import com.mog.project.domain.room.dto.response.RoomCreateResponse;
+import com.mog.project.domain.room.dto.response.RoomDeleteResponse;
 import com.mog.project.domain.room.dto.response.RoomListResponse;
 import com.mog.project.domain.room.dto.response.RoomStatusResponse;
 import com.mog.project.domain.room.dto.response.RoomStepResponse;
@@ -166,7 +167,25 @@ public class RoomService {
       return new RoomCloseResponse(
          room.getRoomId(),
          room.getStatus(),
-         room.getDeletedAt()
+         room.getUpdatedAt()
       );
+   }
+
+   @Transactional
+   public RoomDeleteResponse deleteRoom(String kakaoId, Long roomId) {
+      User user = userRepository.findByKakaoId(kakaoId)
+         .orElseThrow(() -> new AuthException(ErrorCode.UNAUTHORIZED_USER));
+
+      Room room = roomRepository.findById(roomId)
+         .filter(r -> r.getDeletedAt() == null)
+         .orElseThrow(() -> new GlobalException(ErrorCode.ROOM_NOT_FOUND));
+
+      if (!Objects.equals(room.getCreator().getUserId(), user.getUserId())) {
+         throw new GlobalException(ErrorCode.NOT_ROOM_LEADER);
+      }
+
+      room.softDelete();
+
+      return new RoomDeleteResponse(room.getRoomId(), room.getDeletedAt());
    }
 }

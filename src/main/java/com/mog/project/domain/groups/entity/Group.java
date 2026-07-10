@@ -1,12 +1,14 @@
 package com.mog.project.domain.groups.entity;
 
-import com.mog.project.global.common.BaseTimeEntity;        
-import jakarta.persistence.*;                               
-import java.time.LocalDateTime;                             
-import lombok.*;  
+import com.mog.project.global.common.BaseTimeEntity;
+import jakarta.persistence.*;
+import java.time.LocalDateTime;
+import lombok.*;
+import org.hibernate.annotations.SQLRestriction;
 
 @Entity
 @Table(name = "groups")
+@SQLRestriction("deleted_at IS NULL")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Group extends BaseTimeEntity {

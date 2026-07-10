@@ -10,6 +10,7 @@ import com.mog.project.domain.groups.dto.response.GroupUpdateResponse;
 import com.mog.project.domain.groups.dto.response.GroupDeleteResponse;
 import com.mog.project.domain.groups.dto.response.GroupDetailResponse;
 import com.mog.project.domain.groups.dto.response.GroupLeaveResponse;
+import com.mog.project.domain.room.entity.Room;
 import com.mog.project.domain.room.repository.RoomRepository;
 import com.mog.project.domain.groups.entity.Group;
 import com.mog.project.domain.groups.entity.GroupMember;
@@ -213,6 +214,9 @@ public class GroupService {
             throw new GlobalException(ErrorCode.NOT_GROUP_LEADER);
         }
 
+        roomRepository.findByGroupGroupIdAndDeletedAtIsNull(groupId)
+            .forEach(Room::softDelete);
+        groupMemberRepository.deleteAllByGroupGroupId(groupId);
         group.softDelete();
 
         return new GroupDeleteResponse(group.getGroupId(), group.getDeletedAt());

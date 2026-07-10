@@ -52,6 +52,9 @@ public class Room extends BaseTimeEntity {
 
     public void close() {
         this.status = RoomStatus.COMPLETED;
+    }
+
+    public void softDelete() {
         this.deletedAt = LocalDateTime.now();
     }
 }
