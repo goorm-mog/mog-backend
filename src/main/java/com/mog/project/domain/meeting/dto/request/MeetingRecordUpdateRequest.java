@@ -16,6 +16,9 @@ public record MeetingRecordUpdateRequest(
         String memo,
 
         @Valid
+        List<MenuItemRequest> menuItems,
+
+        @Valid
         PayerRequest payer,
 
         // 참여 멤버 목록
