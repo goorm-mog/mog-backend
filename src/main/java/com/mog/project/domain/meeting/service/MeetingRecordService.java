@@ -76,7 +76,8 @@ public class MeetingRecordService {
         MeetingRecord record = MeetingRecord.builder()
                 .roomId(roomId)
                 .seq(nextSeq)
-                .placeName(request.placeName())
+                .placeName(request.place().name())
+                .placeAddress(request.place().address())
                 .memo(request.memo())
                 .payerRoomMemberId(request.payer() != null ? request.payer().roomMemberId() : null)
                 .payerBankName(request.payer() != null ? request.payer().bankName() : null)
@@ -128,7 +129,8 @@ public class MeetingRecordService {
 
         // 엔티티의 update() 메서드 호출, PATCH 방식으로 구현
         record.update(
-                request.placeName(),
+                request.place() != null ? request.place().name() : null,
+                request.place() != null ? request.place().address() : null,
                 request.memo(),
                 request.payer() != null ? request.payer().roomMemberId() : null,
                 request.payer() != null ? request.payer().bankName() : null,
