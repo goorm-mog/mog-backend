@@ -35,6 +35,9 @@ public class MeetingRecordController {
             description = "해당 방의 사진 목록과 전체 차수 기록을 한 번에 반환합니다.\n\n" +
                     "- `photos`: 방에 등록된 사진 목록 (최대 3장)\n" +
                     "- `records`: 차수별 기록 목록 (seq 오름차순)\n" +
+                    "- `place`: 장소 정보\n" +
+                    "  - `name`: 장소 이름\n" +
+                    "  - `address`: 장소 주소 (없으면 null)\n" +
                     "- `totalCost`: 해당 차수의 전체 비용 합계\n" +
                     "- `payer`: 결제자 정보 (없으면 null)\n" +
                     "- `menuItems`: 세부 메뉴 목록 (없으면 빈 배열)\n" +
@@ -55,6 +58,9 @@ public class MeetingRecordController {
             summary = "만남 기록 생성",
             description = "새로운 차수 기록을 추가합니다.\n\n" +
                     "- `seq`(차수)는 자동으로 부여됩니다 (기존 최대 seq + 1)\n" +
+                    "- `place`는 필수입니다\n" +
+                    "  - `name`: 장소 이름 (필수)\n" +
+                    "  - `address`: 장소 주소 (선택, 없으면 null)\n" +
                     "- `payer`는 선택값입니다 (없으면 null)\n" +
                     "- `participants`는 최소 1명 이상 필수입니다\n" +
                     "- `amount`는 0 이상의 정수여야 합니다\n" +
@@ -78,6 +84,9 @@ public class MeetingRecordController {
             summary = "만남 기록 수정",
             description = "특정 차수 기록을 수정합니다. (PATCH 방식)\n\n" +
                     "- 수정하지 않을 필드는 요청에서 **생략하거나 null**로 보내면 기존 값이 유지됩니다\n" +
+                    "- `place`를 포함하면 장소 이름·주소 모두 교체됩니다 (생략하면 기존 유지)\n" +
+                    "  - `name`: 장소 이름 (필수)\n" +
+                    "  - `address`: 장소 주소 (선택, 없으면 null)\n" +
                     "- `participants`를 포함하면 기존 참여자 목록 전체가 교체됩니다\n" +
                     "- `participants`를 생략하면 기존 참여자 목록이 유지됩니다\n" +
                     "- `menuItems`를 포함하면 기존 메뉴 목록 전체가 교체됩니다\n" +

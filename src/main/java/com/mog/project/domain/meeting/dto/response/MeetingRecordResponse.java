@@ -16,7 +16,7 @@ public record MeetingRecordResponse (
         Integer seq,
 
         // 장소명
-        String placeName,
+        PlaceResponse place,
 
         // 메모
         String memo,
@@ -54,7 +54,7 @@ public record MeetingRecordResponse (
         return new MeetingRecordResponse(
                 record.getId(),
                 record.getSeq(),
-                record.getPlaceName(),
+                new PlaceResponse(record.getPlaceName(), record.getPlaceAddress()),
                 record.getMemo(),
                 totalCost,
                 PayerResponse.from(record, nicknameMap),

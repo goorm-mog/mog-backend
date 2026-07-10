@@ -14,6 +14,7 @@ import com.mog.project.global.exception.GlobalException;
 import com.mog.project.domain.meeting.dto.request.MeetingRecordCreateRequest;
 import com.mog.project.domain.meeting.dto.request.MeetingRecordUpdateRequest;
 import com.mog.project.domain.meeting.dto.request.ParticipantRequest;
+import com.mog.project.domain.meeting.dto.request.PlaceRequest;
 import com.mog.project.domain.meeting.dto.response.MeetingRecordListResponse;
 import com.mog.project.domain.meeting.dto.response.MeetingRecordResponse;
 import com.mog.project.domain.meeting.entity.MeetingRecord;
@@ -98,7 +99,7 @@ class MeetingRecordServiceTest {
         MeetingRecordListResponse response = meetingRecordService.getRecords(1L, "kakaoId");
 
         assertThat(response.records()).hasSize(1);
-        assertThat(response.records().get(0).placeName()).isEqualTo("강남");
+        assertThat(response.records().get(0).place().name()).isEqualTo("강남");
     }
 
     // ── createRecord ────────────────────────────────────────────────────────
@@ -111,7 +112,7 @@ class MeetingRecordServiceTest {
         when(meetingMenuItemRepository.findByMeetingRecordIn(any())).thenReturn(List.of());
 
         MeetingRecordCreateRequest request = new MeetingRecordCreateRequest(
-                "홍대", null, null, null,
+                new PlaceRequest("홍대", null), null, null, null,
                 List.of(new ParticipantRequest(100L, 10000))
         );
 
@@ -126,7 +127,7 @@ class MeetingRecordServiceTest {
         when(meetingMenuItemRepository.findByMeetingRecordIn(any())).thenReturn(List.of());
 
         MeetingRecordCreateRequest request = new MeetingRecordCreateRequest(
-                "이태원", null, null, null,
+                new PlaceRequest("이태원", null), null, null, null,
                 List.of(new ParticipantRequest(100L, 5000))
         );
 
@@ -141,7 +142,7 @@ class MeetingRecordServiceTest {
         when(meetingMenuItemRepository.findByMeetingRecordIn(any())).thenReturn(List.of());
 
         MeetingRecordCreateRequest request = new MeetingRecordCreateRequest(
-                "건대", null, null, null,
+                new PlaceRequest("건대", null), null, null, null,
                 List.of(
                         new ParticipantRequest(100L, 10000),
                         new ParticipantRequest(200L, 15000)

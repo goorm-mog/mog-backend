@@ -29,6 +29,9 @@ public class MeetingRecord extends BaseEntity {
     @Column(name = "place_name", nullable = false)
     private String placeName;
 
+    @Column(name = "place_address")
+    private String placeAddress;
+
     @Column(columnDefinition = "TEXT")
     private String memo;
 
@@ -44,18 +47,20 @@ public class MeetingRecord extends BaseEntity {
 
 
     @Builder
-    public MeetingRecord(Long roomId, Integer seq, String placeName, String memo, Long payerRoomMemberId, String payerBankName, String payerAccountNumber) {
+    public MeetingRecord(Long roomId, Integer seq, String placeName, String placeAddress, String memo, Long payerRoomMemberId, String payerBankName, String payerAccountNumber) {
         this.roomId = roomId;
         this.seq = seq;
         this.placeName = placeName;
+        this.placeAddress = placeAddress;
         this.memo = memo;
         this.payerRoomMemberId = payerRoomMemberId;
         this.payerBankName = payerBankName;
         this.payerAccountNumber = payerAccountNumber;
     }
 
-    public void update(String placeName, String memo, Long payerRoomMemberId, String payerBankName, String payerAccountNumber) {
+    public void update(String placeName, String placeAddress, String memo, Long payerRoomMemberId, String payerBankName, String payerAccountNumber) {
         if (placeName != null) this.placeName = placeName;
+        if (placeAddress != null) this.placeAddress = placeAddress;
         if (memo != null) this.memo = memo;
         if (payerRoomMemberId != null) this.payerRoomMemberId = payerRoomMemberId;
         if (payerBankName != null) this.payerBankName = payerBankName;
