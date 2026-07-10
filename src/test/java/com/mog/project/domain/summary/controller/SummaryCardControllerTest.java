@@ -1,5 +1,7 @@
 package com.mog.project.domain.summary.controller;
 
+import com.mog.project.domain.meeting.dto.response.MenuItemResponse;
+import com.mog.project.domain.meeting.dto.response.PlaceResponse;
 import com.mog.project.domain.summary.service.SummaryCardService;
 import com.mog.project.domain.summary.dto.response.*;
 import com.mog.project.global.exception.ErrorCode;
@@ -36,7 +38,7 @@ class SummaryCardControllerTest {
                 new SummaryParticipantResponse("박구름", 8000)
         );
         List<SummaryRecordResponse> records = List.of(
-                new SummaryRecordResponse(1, "합정 카페", "메모", 18000, participants)
+                new SummaryRecordResponse(1, new PlaceResponse("합정 카페", null), "메모", 18000, participants, List.of())
         );
         List<SummaryMemberTotalResponse> memberTotals = List.of(
                 new SummaryMemberTotalResponse("김구름", 25000),

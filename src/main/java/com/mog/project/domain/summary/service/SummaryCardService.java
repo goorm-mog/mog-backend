@@ -2,10 +2,14 @@ package com.mog.project.domain.summary.service;
 
 import com.mog.project.domain.groups.entity.GroupMember;
 import com.mog.project.domain.groups.repository.GroupMemberRepository;
+import com.mog.project.domain.meeting.dto.response.MenuItemResponse;
+import com.mog.project.domain.meeting.dto.response.PlaceResponse;
 import com.mog.project.domain.meeting.entity.MeetingMemberCost;
+import com.mog.project.domain.meeting.entity.MeetingMenuItem;
 import com.mog.project.domain.meeting.entity.MeetingRecord;
 import com.mog.project.domain.meeting.entity.RoomPhoto;
 import com.mog.project.domain.meeting.repository.MeetingMemberCostRepository;
+import com.mog.project.domain.meeting.repository.MeetingMenuItemRepository;
 import com.mog.project.domain.meeting.repository.MeetingRecordRepository;
 import com.mog.project.domain.meeting.repository.RoomPhotoRepository;
 import com.mog.project.domain.midpoint.repository.ConfirmedPlaceRepository;
@@ -54,6 +58,7 @@ public class SummaryCardService {
     private final S3Service s3Service;
     private final NotificationService notificationService;
     private final ConfirmedPlaceRepository confirmedPlaceRepository;
+    private final MeetingMenuItemRepository meetingMenuItemRepository;
 
     public SummaryCardResponse getSummaryData(Long roomId, String kakaoId) {
         Room room = getRoom(roomId);
@@ -190,6 +195,10 @@ public class SummaryCardService {
         Map<Long,List<MeetingMemberCost>> costsByRecord = meetingMemberCostRepository.findByMeetingRecordIn(records).stream()
                 .collect(Collectors.groupingBy(c -> c.getMeetingRecord().getId()));
 
+        Map<Long, List<MeetingMenuItem>> menusByRecord = meetingMenuItemRepository
+                .findByMeetingRecordIn(records).stream()
+                .collect(Collectors.groupingBy(m -> m.getMeetingRecord().getId()));
+
         return records.stream().map(record -> {
             List<MeetingMemberCost> costs = costsByRecord.getOrDefault(record.getId(), List.of());
             int totalCost = costs.stream().mapToInt(MeetingMemberCost::getAmount).sum();
@@ -199,7 +208,20 @@ public class SummaryCardService {
                             c.getAmount()
                     ))
                     .toList();
-            return new SummaryRecordResponse(record.getSeq(), record.getPlaceName(), record.getMemo(), totalCost, participants);
+
+            List<MenuItemResponse> menuItems = menusByRecord.getOrDefault(record.getId(), List.of())
+                    .stream()
+                    .map(MenuItemResponse::from)
+                    .toList();
+
+            return new SummaryRecordResponse(
+                    record.getSeq(),
+                    new PlaceResponse(record.getPlaceName(), record.getPlaceAddress()),
+                    record.getMemo(),
+                    totalCost,
+                    participants,
+                    menuItems
+            );
         }).toList();
     }
 
