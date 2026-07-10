@@ -123,7 +123,7 @@ public class GroupService {
         User user = userRepository.findByKakaoId(kakaoId)
           .orElseThrow(() -> new AuthException(ErrorCode.UNAUTHORIZED_USER));
     
-        List<GroupListResponse.GroupItemResponse> groups = groupMemberRepository.findByUserUserId(user.getUserId())
+        List<GroupListResponse.GroupItemResponse> groups = groupMemberRepository.findActiveGroupsByUserId(user.getUserId())
         .stream()
         .map(gm -> new GroupListResponse.GroupItemResponse(
             gm.getGroup().getGroupId(),
