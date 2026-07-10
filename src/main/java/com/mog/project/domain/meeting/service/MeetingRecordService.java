@@ -1,5 +1,7 @@
 package com.mog.project.domain.meeting.service;
 
+import com.mog.project.domain.meeting.entity.MeetingMenuItem;
+import com.mog.project.domain.meeting.repository.MeetingMenuItemRepository;
 import com.mog.project.domain.notification.entity.NotificationType;
 import com.mog.project.domain.notification.service.NotificationService;
 import com.mog.project.global.exception.ErrorCode;
@@ -38,6 +40,7 @@ public class MeetingRecordService {
     private final GroupMemberRepository groupMemberRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final MeetingMenuItemRepository meetingMenuItemRepository;
 
     // 해당 방의 전체 차수 기록 + 사진 조회
     public MeetingRecordListResponse getRecords(Long roomId, String kakaoId) {
@@ -49,12 +52,15 @@ public class MeetingRecordService {
         // 모든 차수의 참여자 비용을 조회
         List<MeetingMemberCost> allCosts = meetingMemberCostRepository.findByMeetingRecordIn(records);
 
+        // 메뉴 목록 조회
+        List<MeetingMenuItem> allMenuItems = meetingMenuItemRepository.findByMeetingRecordIn(records);
+
         List<RoomPhotoResponse> photos = roomPhotoService.getPhotos(roomId);
 
         Map<Long, String> nicknameMap = buildNicknameMap(roomId);
 
         // response DTO에 담아서 조회 결과를 제공
-        return MeetingRecordListResponse.from(photos, records, allCosts, nicknameMap);
+        return MeetingRecordListResponse.from(photos, records, allCosts, allMenuItems, nicknameMap);
     }
 
     // 새 차수 추가
@@ -78,6 +84,18 @@ public class MeetingRecordService {
                 .build();
         meetingRecordRepository.save(record);
 
+        if (request.menuItems() != null && !request.menuItems().isEmpty()) {
+            List<MeetingMenuItem> menuItems = request.menuItems().stream()
+                    .map(m -> MeetingMenuItem.builder()
+                            .meetingRecord(record)
+                            .itemName(m.itemName())
+                            .quantity(m.quantity())
+                            .price(m.price())
+                            .build())
+                    .toList();
+            meetingMenuItemRepository.saveAll(menuItems);
+        }
+
         // participants 목록을 엔티티로 변환
         List<MeetingMemberCost> costs = request.participants().stream()
                 .map(p -> MeetingMemberCost.builder()
@@ -94,7 +112,9 @@ public class MeetingRecordService {
         // 방 멤버 전체에게 알림을 전송
         notifyRoomMembers(roomId, nextSeq);
 
-        return MeetingRecordResponse.from(record, costs, nicknameMap);
+        List<MeetingMenuItem> savedMenuItems = meetingMenuItemRepository.findByMeetingRecordIn(List.of(record));
+
+        return MeetingRecordResponse.from(record, costs, savedMenuItems, nicknameMap);
     }
 
     // 특정 차수 수정
@@ -131,8 +151,25 @@ public class MeetingRecordService {
             costs = meetingMemberCostRepository.findByMeetingRecordIn(List.of(record));
         }
 
+        List<MeetingMenuItem> menuItems;
+        if (request.menuItems() != null) {
+            meetingMenuItemRepository.deleteByMeetingRecord(record);
+            menuItems = request.menuItems().stream()
+                    .map(m -> MeetingMenuItem.builder()
+                            .meetingRecord(record)
+                            .itemName(m.itemName())
+                            .quantity(m.quantity())
+                            .price(m.price())
+                            .build())
+                    .toList();
+            meetingMenuItemRepository.saveAll(menuItems);
+        } else {
+            menuItems = meetingMenuItemRepository.findByMeetingRecordIn(List.of(record));
+        }
+
+
         Map<Long, String> nicknameMap = buildNicknameMap(roomId);
-        return MeetingRecordResponse.from(record, costs, nicknameMap);
+        return MeetingRecordResponse.from(record, costs, menuItems, nicknameMap);
     }
 
     // 특정 차수 삭제
