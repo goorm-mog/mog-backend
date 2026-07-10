@@ -14,6 +14,9 @@ public record MeetingRecordCreateRequest(
         @Size(max = 200, message = "메모는 200자 이하여야 합니다.")
         String memo,
 
+        @Valid
+        List<MenuItemRequest> menuItems,
+
         // 결제자 정보
         @Valid
         PayerRequest payer,

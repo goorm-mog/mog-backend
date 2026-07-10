@@ -1,6 +1,7 @@
 package com.mog.project.domain.meeting.dto.response;
 
 import com.mog.project.domain.meeting.entity.MeetingMemberCost;
+import com.mog.project.domain.meeting.entity.MeetingMenuItem;
 import com.mog.project.domain.meeting.entity.MeetingRecord;
 
 import java.time.LocalDateTime;
@@ -28,10 +29,13 @@ public record MeetingRecordResponse (
         // 참여 목록
         List<ParticipantResponse> participants,
 
+        // 메뉴 목록
+        List<MenuItemResponse> menuItems,
+
         // 생성 일시
         LocalDateTime createdAt
 ) {
-    public static MeetingRecordResponse from(MeetingRecord record, List<MeetingMemberCost> costs, Map<Long, String> nicknameMap) {
+    public static MeetingRecordResponse from(MeetingRecord record, List<MeetingMemberCost> costs, List<MeetingMenuItem> menuItems, Map<Long, String> nicknameMap) {
 
         // costs를 ParticipantResponse의 형태로 형변환
         List<ParticipantResponse> participants = costs.stream()
@@ -43,6 +47,10 @@ public record MeetingRecordResponse (
                 .mapToInt(MeetingMemberCost::getAmount)
                 .sum();
 
+        List<MenuItemResponse> menuItemResponses = menuItems.stream()
+                .map(MenuItemResponse::from)
+                .toList();
+
         return new MeetingRecordResponse(
                 record.getId(),
                 record.getSeq(),
@@ -51,6 +59,7 @@ public record MeetingRecordResponse (
                 totalCost,
                 PayerResponse.from(record, nicknameMap),
                 participants,
+                menuItemResponses,
                 record.getCreatedAt()
         );
     }

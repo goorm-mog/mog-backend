@@ -42,6 +42,7 @@ class MeetingRecordControllerTest {
         return new MeetingRecordResponse(
                 1L, 1, "강남", "메모", 10000, null,
                 List.of(new ParticipantResponse(100L, "멤버100", 10000)),
+                List.of(),
                 LocalDateTime.now()
         );
     }
@@ -68,7 +69,7 @@ class MeetingRecordControllerTest {
         when(meetingRecordService.createRecord(eq(1L), any(), any())).thenReturn(sampleResponse());
 
         MeetingRecordCreateRequest request = new MeetingRecordCreateRequest(
-                "강남", null, null,
+                "강남", null, null, null,
                 List.of(new ParticipantRequest(100L, 10000))
         );
 
@@ -134,7 +135,7 @@ class MeetingRecordControllerTest {
     @Test
     void updateRecord_200_반환() throws Exception {
         MeetingRecordResponse updated = new MeetingRecordResponse(
-                1L, 1, "수정된 장소", null, 0, null, List.of(), LocalDateTime.now()
+                1L, 1, "수정된 장소", null, 0, null, List.of(), List.of(), LocalDateTime.now()
         );
         when(meetingRecordService.updateRecord(eq(1L), eq(1L), any(), any())).thenReturn(updated);
 
@@ -142,7 +143,7 @@ class MeetingRecordControllerTest {
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new MeetingRecordUpdateRequest("수정된 장소", null, null, null)
+                                new MeetingRecordUpdateRequest("수정된 장소", null, null, null, null)
                         )))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.placeName").value("수정된 장소"));

@@ -36,7 +36,12 @@ public class MeetingRecordController {
                     "- `photos`: 방에 등록된 사진 목록 (최대 3장)\n" +
                     "- `records`: 차수별 기록 목록 (seq 오름차순)\n" +
                     "- `totalCost`: 해당 차수의 전체 비용 합계\n" +
-                    "- `payer`: 결제자 정보 (없으면 null)"
+                    "- `payer`: 결제자 정보 (없으면 null)\n" +
+                    "- `menuItems`: 세부 메뉴 목록 (없으면 빈 배열)\n" +
+                    "  - `itemName`: 메뉴 이름\n" +
+                    "  - `quantity`: 수량\n" +
+                    "  - `price`: 단가\n" +
+                    "  - `totalPrice`: 합계 금액 (quantity × price)"
     )
     @GetMapping
     public ResponseEntity<ApiResponse<MeetingRecordListResponse>> getRecords(
@@ -52,7 +57,11 @@ public class MeetingRecordController {
                     "- `seq`(차수)는 자동으로 부여됩니다 (기존 최대 seq + 1)\n" +
                     "- `payer`는 선택값입니다 (없으면 null)\n" +
                     "- `participants`는 최소 1명 이상 필수입니다\n" +
-                    "- `amount`는 0 이상의 정수여야 합니다"
+                    "- `amount`는 0 이상의 정수여야 합니다\n" +
+                    "- `menuItems`는 선택값입니다 (없으면 생략 또는 null)\n" +
+                    "  - `itemName`: 메뉴 이름 (필수)\n" +
+                    "  - `quantity`: 수량, 1 이상 (필수)\n" +
+                    "  - `price`: 단가, 0 이상 (필수)"
     )
     @PostMapping
     public ResponseEntity<ApiResponse<MeetingRecordResponse>> createRecord(
@@ -70,7 +79,9 @@ public class MeetingRecordController {
             description = "특정 차수 기록을 수정합니다. (PATCH 방식)\n\n" +
                     "- 수정하지 않을 필드는 요청에서 **생략하거나 null**로 보내면 기존 값이 유지됩니다\n" +
                     "- `participants`를 포함하면 기존 참여자 목록 전체가 교체됩니다\n" +
-                    "- `participants`를 생략하면 기존 참여자 목록이 유지됩니다"
+                    "- `participants`를 생략하면 기존 참여자 목록이 유지됩니다\n" +
+                    "- `menuItems`를 포함하면 기존 메뉴 목록 전체가 교체됩니다\n" +
+                    "- `menuItems`를 생략하면 기존 메뉴 목록이 유지됩니다"
     )
     @PatchMapping("/{recordId}")
     public ResponseEntity<ApiResponse<MeetingRecordResponse>> updateRecord(
