@@ -113,7 +113,7 @@ class GroupServiceTest {
         GroupMember memberB = GroupMember.builder().group(groupB).user(user).role(GroupMemberRole.MEMBER).build();
 
         given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(user));
-        given(groupMemberRepository.findByUserUserId(any())).willReturn(List.of(memberA, memberB));
+        given(groupMemberRepository.findActiveGroupsByUserId(any())).willReturn(List.of(memberA, memberB));
         given(groupMemberRepository.countByGroupGroupId(any())).willReturn(4, 6);
 
         GroupListResponse response = groupService.getMyGroups("kakao-123");
@@ -126,9 +126,26 @@ class GroupServiceTest {
     }
 
     @Test
+    void 소프트삭제된_그룹은_목록_조회에서_제외된다() {
+        User user = user("kakao-123");
+        Group activeGroup = group("AAA111", "살아있는 그룹");
+        GroupMember activeMember = GroupMember.builder().group(activeGroup).user(user).role(GroupMemberRole.LEADER).build();
+
+        given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(user));
+        // findActiveGroupsByUserId는 deletedAt IS NULL 조건으로 소프트삭제된 그룹을 이미 제외하고 반환
+        given(groupMemberRepository.findActiveGroupsByUserId(any())).willReturn(List.of(activeMember));
+        given(groupMemberRepository.countByGroupGroupId(any())).willReturn(3);
+
+        GroupListResponse response = groupService.getMyGroups("kakao-123");
+
+        assertThat(response.groups()).hasSize(1);
+        assertThat(response.groups().get(0).groupName()).isEqualTo("살아있는 그룹");
+    }
+
+    @Test
     void 가입한_그룹이_없으면_빈_목록을_반환한다() {
         given(userRepository.findByKakaoId("kakao-123")).willReturn(Optional.of(user("kakao-123")));
-        given(groupMemberRepository.findByUserUserId(any())).willReturn(List.of());
+        given(groupMemberRepository.findActiveGroupsByUserId(any())).willReturn(List.of());
 
         GroupListResponse response = groupService.getMyGroups("kakao-123");
 
