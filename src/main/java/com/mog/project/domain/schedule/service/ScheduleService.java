@@ -70,7 +70,7 @@ public class ScheduleService {
                 .toList();
  
         List<ScheduleSlot> savedSlots = scheduleSlotRepository.saveAll(slots);
-        return SlotListResponse.from(roomId, getTotalParticipants(roomId), savedSlots);
+        return SlotListResponse.from(roomId, savedSlots, List.of());
     }
  
     // ──────────────────────────────────────────
@@ -79,7 +79,7 @@ public class ScheduleService {
     public SlotListResponse getSlots(Long roomId) {
         List<ScheduleSlot> slots = scheduleSlotRepository.findAllByRoomId(roomId);
         List<ScheduleVote> votes = scheduleVoteRepository.findAllByRoomId(roomId);
-        return SlotListResponse.from(roomId, getTotalParticipants(roomId), slots, votes);
+        return SlotListResponse.from(roomId, slots, votes);
     }
  
     // ──────────────────────────────────────────
