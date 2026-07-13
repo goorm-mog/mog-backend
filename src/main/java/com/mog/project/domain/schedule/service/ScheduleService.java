@@ -1,8 +1,11 @@
 package com.mog.project.domain.schedule.service;
 
+import com.mog.project.domain.midpoint.repository.DepartureLocationRepository;
+import com.mog.project.domain.midpoint.repository.MiddlePointRepository;
 import com.mog.project.domain.room.entity.RoomMember;
 import com.mog.project.domain.room.repository.RoomMemberRepository;
 import com.mog.project.domain.schedule.dto.ScheduleConfirmRequest;
+import com.mog.project.domain.schedule.dto.ScheduleStatusResponse;
 import com.mog.project.domain.schedule.dto.SlotCreateRequest;
 import com.mog.project.domain.schedule.dto.VoteRequest;
 import com.mog.project.domain.schedule.dto.ConfirmedScheduleResponse;
@@ -35,12 +38,19 @@ public class ScheduleService {
     private final UserRepository userRepository;
     private final RoomMemberRepository roomMemberRepository;
     private final KakaoCalendarClient kakaoCalendarClient;
+    private final DepartureLocationRepository departureLocationRepository;
+    private final MiddlePointRepository middlePointRepository;
  
     // kakaoId → userId 변환 공통 메서드
     private Long getUserId(String kakaoId) {
         return userRepository.findByKakaoId(kakaoId)
                 .orElseThrow(() -> new IllegalArgumentException("유저를 찾을 수 없습니다."))
                 .getUserId();
+    }
+ 
+    // 방 참여자 수 조회 공통 메서드
+    private int getTotalParticipants(Long roomId) {
+        return roomMemberRepository.findByRoomRoomId(roomId).size();
     }
  
     // ──────────────────────────────────────────
@@ -114,7 +124,6 @@ public class ScheduleService {
  
         ConfirmedSchedule confirmed = confirmedScheduleRepository.findByRoomId(roomId)
                 .map(existing -> {
-                    // 이미 확정된 경우 → 덮어쓰기
                     existing.update(request.date(), request.time());
                     return existing;
                 })
@@ -135,19 +144,16 @@ public class ScheduleService {
             User memberUser = member.getUser();
             try {
                 if (confirmed.getKakaoEventId() == null) {
-                    // 처음 확정 → 일정 생성
                     String eventId = kakaoCalendarClient.createEvent(
                             memberUser,
                             "모임 일정",
                             request.date(),
                             request.time()
                     );
-                    // 방장의 eventId만 저장 (대표)
                     if (memberUser.getUserId().equals(userId)) {
                         confirmed.updateKakaoEventId(eventId);
                     }
                 } else {
-                    // 재확정 → 일정 수정
                     kakaoCalendarClient.updateEvent(
                             memberUser,
                             confirmed.getKakaoEventId(),
@@ -174,5 +180,38 @@ public class ScheduleService {
         ConfirmedSchedule confirmed = confirmedScheduleRepository.findByRoomId(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("아직 확정된 일정이 없습니다."));
         return ConfirmedScheduleResponse.from(confirmed);
+    }
+ 
+    // ──────────────────────────────────────────
+    // 6. 현재 진행 단계 조회
+    // ──────────────────────────────────────────
+    public ScheduleStatusResponse getStatus(Long roomId) {
+        // 슬롯이 없으면 → 대기 중
+        List<ScheduleSlot> slots = scheduleSlotRepository.findAllByRoomId(roomId);
+        if (slots.isEmpty()) {
+            return ScheduleStatusResponse.waiting(roomId);
+        }
+ 
+        // 일정 확정이 안 됐으면 → 날짜/시간 투표 중
+        boolean isScheduleConfirmed = confirmedScheduleRepository.existsByRoomId(roomId);
+        if (!isScheduleConfirmed) {
+            return ScheduleStatusResponse.scheduleVoting(roomId);
+        }
+ 
+        // 출발지 미입력 인원이 있으면 → 출발지 입력 중
+        int totalParticipants = getTotalParticipants(roomId);
+        long submittedCount = departureLocationRepository.countByRoomId(roomId);
+        if (submittedCount < totalParticipants) {
+            return ScheduleStatusResponse.departureInput(roomId);
+        }
+ 
+        // 중간지점 미계산이면 → 중간지점 찾기 중
+        boolean isMiddlePointCalculated = middlePointRepository.existsByRoomId(roomId);
+        if (!isMiddlePointCalculated) {
+            return ScheduleStatusResponse.midpointFinding(roomId);
+        }
+ 
+        // 모두 완료
+        return ScheduleStatusResponse.completed(roomId);
     }
 }

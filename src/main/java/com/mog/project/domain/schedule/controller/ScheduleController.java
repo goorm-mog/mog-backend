@@ -2,6 +2,7 @@ package com.mog.project.domain.schedule.controller;
 
 import com.mog.project.domain.schedule.dto.ConfirmedScheduleResponse;
 import com.mog.project.domain.schedule.dto.ScheduleConfirmRequest;
+import com.mog.project.domain.schedule.dto.ScheduleStatusResponse;
 import com.mog.project.domain.schedule.dto.SlotCreateRequest;
 import com.mog.project.domain.schedule.dto.SlotListResponse;
 import com.mog.project.domain.schedule.dto.VoteRequest;
@@ -37,7 +38,7 @@ public class ScheduleController {
     // ──────────────────────────────────────────
     // 2. 슬롯 목록 조회 (투표 현황 포함)
     // ──────────────────────────────────────────
-    @Operation(summary = "슬롯 목록 조회", description = "투표 가능한 슬롯 목록과 각 슬롯의 투표 현황을 조회합니다.")
+    @Operation(summary = "슬롯 목록 조회", description = "투표 가능한 슬롯 목록과 각 슬롯의 투표 현황을 조회합니다. slotId, voteCount, votedUserIds, totalParticipants 포함.")
     @GetMapping("/slots")
     public ResponseEntity<SlotListResponse> getSlots(
             @PathVariable Long roomId) {
@@ -59,7 +60,7 @@ public class ScheduleController {
     // ──────────────────────────────────────────
     // 4. 일정 확정 (방장)
     // ──────────────────────────────────────────
-    @Operation(summary = "일정 확정", description = "방장이 최종 일정을 확정합니다. 투표 여부와 무관하게 자유롭게 확정 가능하며, 이미 확정된 경우 덮어쓰기됩니다.")
+    @Operation(summary = "일정 확정", description = "방장이 최종 일정을 확정합니다. 투표 여부와 무관하게 자유롭게 확정 가능하며, 이미 확정된 경우 덮어쓰기됩니다. 참여자 전원 카카오 톡캘린더에 자동 등록됩니다.")
     @PatchMapping("/confirm")
     public ResponseEntity<ConfirmedScheduleResponse> confirm(
             @PathVariable Long roomId,
@@ -76,5 +77,15 @@ public class ScheduleController {
     public ResponseEntity<ConfirmedScheduleResponse> getConfirmedSchedule(
             @PathVariable Long roomId) {
         return ResponseEntity.ok(scheduleService.getConfirmedSchedule(roomId));
+    }
+ 
+    // ──────────────────────────────────────────
+    // 6. 현재 진행 단계 조회
+    // ──────────────────────────────────────────
+    @Operation(summary = "현재 진행 단계 조회", description = "현재 방이 어느 단계인지 조회합니다. WAITING | SCHEDULE_VOTING | DEPARTURE_INPUT | MIDPOINT_FINDING | COMPLETED")
+    @GetMapping("/status")
+    public ResponseEntity<ScheduleStatusResponse> getStatus(
+            @PathVariable Long roomId) {
+        return ResponseEntity.ok(scheduleService.getStatus(roomId));
     }
 }
