@@ -22,7 +22,7 @@ public class KakaoMobilityClient {
  
         return switch (transportType) {
             case "CAR" -> getCarDuration(originLat, originLng, destLat, destLng);
-            case "PUBLIC" -> getTransitDuration(originLat, originLng, destLat, destLng);
+            case "PUBLIC" -> getCarDuration(originLat, originLng, destLat, destLng); // 임시 조정
             case "WALK" -> getWalkDuration(originLat, originLng, destLat, destLng);
             default -> throw new IllegalArgumentException("지원하지 않는 이동수단입니다: " + transportType);
         };
