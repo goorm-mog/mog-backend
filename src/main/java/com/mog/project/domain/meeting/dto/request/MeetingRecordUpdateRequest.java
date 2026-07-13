@@ -9,11 +9,15 @@ import java.util.List;
 public record MeetingRecordUpdateRequest(
 
         // 장소명
-        String placeName,
+        @Valid
+        PlaceRequest place,
 
         // 메모
         @Size(max = 200, message = "메모는 200자 이하여야 합니다.")
         String memo,
+
+        @Valid
+        List<MenuItemRequest> menuItems,
 
         @Valid
         PayerRequest payer,

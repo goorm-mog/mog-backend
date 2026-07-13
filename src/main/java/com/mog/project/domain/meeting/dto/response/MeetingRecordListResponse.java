@@ -2,6 +2,7 @@ package com.mog.project.domain.meeting.dto.response;
 
 
 import com.mog.project.domain.meeting.entity.MeetingMemberCost;
+import com.mog.project.domain.meeting.entity.MeetingMenuItem;
 import com.mog.project.domain.meeting.entity.MeetingRecord;
 
 import java.util.List;
@@ -16,6 +17,7 @@ public record MeetingRecordListResponse(
             List<RoomPhotoResponse> photos,
             List<MeetingRecord> records,
             List<MeetingMemberCost> allCosts,
+            List<MeetingMenuItem> allMenuItems,
             Map<Long, String> nicknameMap
     ) {
         // MeetingMemberCost를 meetingRecordId를 기준으로 그룹
@@ -23,10 +25,14 @@ public record MeetingRecordListResponse(
         Map<Long, List<MeetingMemberCost>> costsByRecordId = allCosts.stream()
                 .collect(Collectors.groupingBy(cost -> cost.getMeetingRecord().getId()));
 
+        Map<Long, List<MeetingMenuItem>> menusByRecordId = allMenuItems.stream()
+                .collect(Collectors.groupingBy(item -> item.getMeetingRecord().getId()));
+
         List<MeetingRecordResponse> recordResponses = records.stream()
                 .map(record -> MeetingRecordResponse.from(
                         record,
                         costsByRecordId.getOrDefault(record.getId(), List.of()),
+                        menusByRecordId.getOrDefault(record.getId(), List.of()),
                         nicknameMap
                 ))
                 .toList();

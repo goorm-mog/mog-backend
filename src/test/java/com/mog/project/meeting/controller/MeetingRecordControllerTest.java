@@ -5,9 +5,11 @@ import com.mog.project.domain.meeting.controller.MeetingRecordController;
 import com.mog.project.domain.meeting.dto.request.MeetingRecordCreateRequest;
 import com.mog.project.domain.meeting.dto.request.MeetingRecordUpdateRequest;
 import com.mog.project.domain.meeting.dto.request.ParticipantRequest;
+import com.mog.project.domain.meeting.dto.request.PlaceRequest;
 import com.mog.project.domain.meeting.dto.response.MeetingRecordListResponse;
 import com.mog.project.domain.meeting.dto.response.MeetingRecordResponse;
 import com.mog.project.domain.meeting.dto.response.ParticipantResponse;
+import com.mog.project.domain.meeting.dto.response.PlaceResponse;
 import com.mog.project.domain.meeting.service.MeetingRecordService;
 import com.mog.project.domain.meeting.service.OcrService;
 import org.junit.jupiter.api.Test;
@@ -40,8 +42,9 @@ class MeetingRecordControllerTest {
 
     private MeetingRecordResponse sampleResponse() {
         return new MeetingRecordResponse(
-                1L, 1, "강남", "메모", 10000, null,
+                1L, 1, new PlaceResponse("강남", null), "메모", 10000, null,
                 List.of(new ParticipantResponse(100L, "멤버100", 10000)),
+                List.of(),
                 LocalDateTime.now()
         );
     }
@@ -68,7 +71,7 @@ class MeetingRecordControllerTest {
         when(meetingRecordService.createRecord(eq(1L), any(), any())).thenReturn(sampleResponse());
 
         MeetingRecordCreateRequest request = new MeetingRecordCreateRequest(
-                "강남", null, null,
+                new PlaceRequest("강남", null), null, null, null,
                 List.of(new ParticipantRequest(100L, 10000))
         );
 
@@ -77,7 +80,7 @@ class MeetingRecordControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.data.placeName").value("강남"))
+                .andExpect(jsonPath("$.data.place.name").value("강남"))
                 .andExpect(jsonPath("$.data.seq").value(1))
                 .andExpect(jsonPath("$.data.totalCost").value(10000));
     }
@@ -134,7 +137,7 @@ class MeetingRecordControllerTest {
     @Test
     void updateRecord_200_반환() throws Exception {
         MeetingRecordResponse updated = new MeetingRecordResponse(
-                1L, 1, "수정된 장소", null, 0, null, List.of(), LocalDateTime.now()
+                1L, 1, new PlaceResponse("수정된 장소", null), null, 0, null, List.of(), List.of(), LocalDateTime.now()
         );
         when(meetingRecordService.updateRecord(eq(1L), eq(1L), any(), any())).thenReturn(updated);
 
@@ -142,10 +145,10 @@ class MeetingRecordControllerTest {
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(
-                                new MeetingRecordUpdateRequest("수정된 장소", null, null, null)
+                                new MeetingRecordUpdateRequest(new PlaceRequest("수정된 장소", null), null, null, null, null)
                         )))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.placeName").value("수정된 장소"));
+                .andExpect(jsonPath("$.data.place.name").value("수정된 장소"));
     }
 
     // ── DELETE /api/v1/rooms/{roomId}/records/{recordId} ────────────────────

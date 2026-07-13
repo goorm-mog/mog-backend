@@ -1,8 +1,14 @@
 package com.mog.project.domain.schedule.service;
 
+import com.mog.project.domain.midpoint.repository.DepartureLocationRepository;
+import com.mog.project.domain.midpoint.repository.MiddlePointRepository;
+import com.mog.project.domain.notification.service.NotificationService;
+import com.mog.project.domain.room.entity.Room;
 import com.mog.project.domain.room.entity.RoomMember;
 import com.mog.project.domain.room.repository.RoomMemberRepository;
+import com.mog.project.domain.room.repository.RoomRepository;
 import com.mog.project.domain.schedule.dto.ScheduleConfirmRequest;
+import com.mog.project.domain.schedule.dto.ScheduleStatusResponse;
 import com.mog.project.domain.schedule.dto.SlotCreateRequest;
 import com.mog.project.domain.schedule.dto.VoteRequest;
 import com.mog.project.domain.schedule.dto.ConfirmedScheduleResponse;
@@ -45,7 +51,11 @@ class ScheduleServiceTest {
     @Mock private ScheduleWebSocketPublisher scheduleWebSocketPublisher;
     @Mock private UserRepository userRepository;
     @Mock private RoomMemberRepository roomMemberRepository;
+    @Mock private RoomRepository roomRepository;
     @Mock private KakaoCalendarClient kakaoCalendarClient;
+    @Mock private DepartureLocationRepository departureLocationRepository;
+    @Mock private MiddlePointRepository middlePointRepository;
+    @Mock private NotificationService notificationService;
  
     @InjectMocks
     private ScheduleService scheduleService;
@@ -143,7 +153,7 @@ class ScheduleServiceTest {
     }
  
     // ──────────────────────────────────────────
-    // 3. 투표 등록
+    // 3. 투표 등록/취소
     // ──────────────────────────────────────────
     @Test
     @DisplayName("투표 등록 성공 - 투표하지 않은 슬롯에 투표")
@@ -201,7 +211,7 @@ class ScheduleServiceTest {
     // 4. 일정 확정
     // ──────────────────────────────────────────
     @Test
-    @DisplayName("일정 확정 성공 - 처음 확정하는 경우 새로 저장 + 톡캘린더 등록")
+    @DisplayName("일정 확정 성공 - 처음 확정 + 톡캘린더 등록")
     void confirm_success_new() {
         // given
         Long roomId = 1L;
@@ -222,16 +232,19 @@ class ScheduleServiceTest {
  
         given(confirmedScheduleRepository.findByRoomId(roomId)).willReturn(Optional.empty());
         given(confirmedScheduleRepository.save(any())).willReturn(confirmedSchedule);
- 
-        // RoomMember Mock
+
         RoomMember roomMember = mock(RoomMember.class);
         given(roomMember.getUser()).willReturn(user);
         given(roomMemberRepository.findByRoomRoomId(roomId)).willReturn(List.of(roomMember));
         given(kakaoCalendarClient.createEvent(any(), any(), any(), any())).willReturn("kakao_event_123");
- 
+
+        Room room = mock(Room.class);
+        given(room.getRoomName()).willReturn("테스트방");
+        given(roomRepository.findById(roomId)).willReturn(Optional.of(room));
+
         // when
         ConfirmedScheduleResponse response = scheduleService.confirm(roomId, kakaoId, request);
- 
+
         // then
         assertThat(response.date()).isEqualTo(LocalDate.of(2025, 7, 1));
         assertThat(response.time()).isEqualTo(LocalTime.of(18, 0));
@@ -241,7 +254,7 @@ class ScheduleServiceTest {
     }
  
     @Test
-    @DisplayName("일정 확정 성공 - 이미 확정된 경우 덮어쓰기 + 톡캘린더 수정")
+    @DisplayName("일정 확정 성공 - 재확정 + 톡캘린더 수정")
     void confirm_success_update() {
         // given
         Long roomId = 1L;
@@ -262,14 +275,18 @@ class ScheduleServiceTest {
         ReflectionTestUtils.setField(existing, "kakaoEventId", "kakao_event_123");
  
         given(confirmedScheduleRepository.findByRoomId(roomId)).willReturn(Optional.of(existing));
- 
+
         RoomMember roomMember = mock(RoomMember.class);
         given(roomMember.getUser()).willReturn(user);
         given(roomMemberRepository.findByRoomRoomId(roomId)).willReturn(List.of(roomMember));
- 
+
+        Room room = mock(Room.class);
+        given(room.getRoomName()).willReturn("테스트방");
+        given(roomRepository.findById(roomId)).willReturn(Optional.of(room));
+
         // when
         ConfirmedScheduleResponse response = scheduleService.confirm(roomId, kakaoId, request);
- 
+
         // then
         assertThat(response.date()).isEqualTo(LocalDate.of(2025, 7, 3));
         assertThat(response.time()).isEqualTo(LocalTime.of(20, 0));
@@ -309,12 +326,120 @@ class ScheduleServiceTest {
     void getConfirmedSchedule_fail_notFound() {
         // given
         Long roomId = 1L;
- 
         given(confirmedScheduleRepository.findByRoomId(roomId)).willReturn(Optional.empty());
  
         // when & then
         assertThatThrownBy(() -> scheduleService.getConfirmedSchedule(roomId))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessage("아직 확정된 일정이 없습니다.");
+    }
+ 
+    // ──────────────────────────────────────────
+    // 6. 현재 진행 단계 조회
+    // ──────────────────────────────────────────
+    @Test
+    @DisplayName("현황 조회 - WAITING (슬롯 없음)")
+    void getStatus_waiting() {
+        // given
+        Long roomId = 1L;
+        given(scheduleSlotRepository.findAllByRoomId(roomId)).willReturn(List.of());
+ 
+        // when
+        ScheduleStatusResponse response = scheduleService.getStatus(roomId);
+ 
+        // then
+        assertThat(response.status()).isEqualTo("WAITING");
+    }
+ 
+    @Test
+    @DisplayName("현황 조회 - SCHEDULE_VOTING (슬롯 있음, 일정 미확정)")
+    void getStatus_scheduleVoting() {
+        // given
+        Long roomId = 1L;
+        ScheduleSlot slot = ScheduleSlot.builder()
+                .roomId(roomId)
+                .slotDate(LocalDate.of(2025, 7, 1))
+                .slotTime(LocalTime.of(18, 0))
+                .build();
+ 
+        given(scheduleSlotRepository.findAllByRoomId(roomId)).willReturn(List.of(slot));
+        given(confirmedScheduleRepository.existsByRoomId(roomId)).willReturn(false);
+ 
+        // when
+        ScheduleStatusResponse response = scheduleService.getStatus(roomId);
+ 
+        // then
+        assertThat(response.status()).isEqualTo("SCHEDULE_VOTING");
+    }
+ 
+    @Test
+    @DisplayName("현황 조회 - DEPARTURE_INPUT (일정 확정, 출발지 미입력)")
+    void getStatus_departureInput() {
+        // given
+        Long roomId = 1L;
+        ScheduleSlot slot = ScheduleSlot.builder()
+                .roomId(roomId)
+                .slotDate(LocalDate.of(2025, 7, 1))
+                .slotTime(LocalTime.of(18, 0))
+                .build();
+ 
+        given(scheduleSlotRepository.findAllByRoomId(roomId)).willReturn(List.of(slot));
+        given(confirmedScheduleRepository.existsByRoomId(roomId)).willReturn(true);
+        given(roomMemberRepository.findByRoomRoomId(roomId)).willReturn(List.of(mock(RoomMember.class), mock(RoomMember.class)));
+        given(departureLocationRepository.countByRoomId(roomId)).willReturn(1L);
+ 
+        // when
+        ScheduleStatusResponse response = scheduleService.getStatus(roomId);
+ 
+        // then
+        assertThat(response.status()).isEqualTo("DEPARTURE_INPUT");
+    }
+ 
+    @Test
+    @DisplayName("현황 조회 - MIDPOINT_FINDING (출발지 전원 입력, 중간지점 미계산)")
+    void getStatus_midpointFinding() {
+        // given
+        Long roomId = 1L;
+        ScheduleSlot slot = ScheduleSlot.builder()
+                .roomId(roomId)
+                .slotDate(LocalDate.of(2025, 7, 1))
+                .slotTime(LocalTime.of(18, 0))
+                .build();
+ 
+        given(scheduleSlotRepository.findAllByRoomId(roomId)).willReturn(List.of(slot));
+        given(confirmedScheduleRepository.existsByRoomId(roomId)).willReturn(true);
+        given(roomMemberRepository.findByRoomRoomId(roomId)).willReturn(List.of(mock(RoomMember.class), mock(RoomMember.class)));
+        given(departureLocationRepository.countByRoomId(roomId)).willReturn(2L);
+        given(middlePointRepository.existsByRoomId(roomId)).willReturn(false);
+ 
+        // when
+        ScheduleStatusResponse response = scheduleService.getStatus(roomId);
+ 
+        // then
+        assertThat(response.status()).isEqualTo("MIDPOINT_FINDING");
+    }
+ 
+    @Test
+    @DisplayName("현황 조회 - COMPLETED (중간지점 계산 완료)")
+    void getStatus_completed() {
+        // given
+        Long roomId = 1L;
+        ScheduleSlot slot = ScheduleSlot.builder()
+                .roomId(roomId)
+                .slotDate(LocalDate.of(2025, 7, 1))
+                .slotTime(LocalTime.of(18, 0))
+                .build();
+ 
+        given(scheduleSlotRepository.findAllByRoomId(roomId)).willReturn(List.of(slot));
+        given(confirmedScheduleRepository.existsByRoomId(roomId)).willReturn(true);
+        given(roomMemberRepository.findByRoomRoomId(roomId)).willReturn(List.of(mock(RoomMember.class), mock(RoomMember.class)));
+        given(departureLocationRepository.countByRoomId(roomId)).willReturn(2L);
+        given(middlePointRepository.existsByRoomId(roomId)).willReturn(true);
+ 
+        // when
+        ScheduleStatusResponse response = scheduleService.getStatus(roomId);
+ 
+        // then
+        assertThat(response.status()).isEqualTo("COMPLETED");
     }
 }

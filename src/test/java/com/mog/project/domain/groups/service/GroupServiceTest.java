@@ -42,12 +42,13 @@ class GroupServiceTest {
     @Mock private GroupMemberRepository groupMemberRepository;
     @Mock private UserRepository userRepository;
     @Mock private RoomRepository roomRepository;
+    @Mock private com.mog.project.domain.notification.service.NotificationService notificationService;
 
     private GroupService groupService;
 
     @BeforeEach
     void setUp() {
-        groupService = new GroupService(groupRepository, groupMemberRepository, userRepository, roomRepository);
+        groupService = new GroupService(groupRepository, groupMemberRepository, userRepository, roomRepository, notificationService);
     }
 
     // ---- 그룹 참여 ----

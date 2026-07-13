@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -37,8 +38,10 @@ public class NotificationController {
     public SseEmitter subscribe(
             @Parameter(description = "JWT 액세스 토큰 (EventSource는 헤더 미지원으로 쿼리 파라미터로 전달)", required = true)
             @RequestParam String token,
-            @AuthenticationPrincipal String kakaoId
+            @AuthenticationPrincipal String kakaoId,
+            HttpServletResponse response
     ) {
+        response.setHeader("X-Accel-Buffering", "no");
         return notificationService.subscribe(kakaoId);
     }
 
