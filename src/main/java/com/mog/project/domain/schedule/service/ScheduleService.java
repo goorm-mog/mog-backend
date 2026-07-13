@@ -2,8 +2,12 @@ package com.mog.project.domain.schedule.service;
 
 import com.mog.project.domain.midpoint.repository.DepartureLocationRepository;
 import com.mog.project.domain.midpoint.repository.MiddlePointRepository;
+import com.mog.project.domain.notification.entity.NotificationType;
+import com.mog.project.domain.notification.service.NotificationService;
+import com.mog.project.domain.room.entity.Room;
 import com.mog.project.domain.room.entity.RoomMember;
 import com.mog.project.domain.room.repository.RoomMemberRepository;
+import com.mog.project.domain.room.repository.RoomRepository;
 import com.mog.project.domain.schedule.dto.ScheduleConfirmRequest;
 import com.mog.project.domain.schedule.dto.ScheduleStatusResponse;
 import com.mog.project.domain.schedule.dto.SlotCreateRequest;
@@ -37,9 +41,11 @@ public class ScheduleService {
     private final ScheduleWebSocketPublisher scheduleWebSocketPublisher;
     private final UserRepository userRepository;
     private final RoomMemberRepository roomMemberRepository;
+    private final RoomRepository roomRepository;
     private final KakaoCalendarClient kakaoCalendarClient;
     private final DepartureLocationRepository departureLocationRepository;
     private final MiddlePointRepository middlePointRepository;
+    private final NotificationService notificationService;
  
     // kakaoId → userId 변환 공통 메서드
     private Long getUserId(String kakaoId) {
@@ -169,7 +175,17 @@ public class ScheduleService {
  
         ConfirmedScheduleResponse response = ConfirmedScheduleResponse.from(confirmed);
         scheduleWebSocketPublisher.publishConfirm(roomId, response);
- 
+
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("방을 찾을 수 없습니다."));
+        String message = "[" + room.getRoomName() + "] 날짜가 확정됐습니다.";
+        roomMembers.forEach(member -> notificationService.send(
+                member.getUser().getUserId(),
+                NotificationType.DATE_CONFIRMED,
+                message,
+                roomId
+        ));
+
         return response;
     }
  

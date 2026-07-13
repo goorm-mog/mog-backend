@@ -10,10 +10,13 @@ import com.mog.project.domain.midpoint.entity.ConfirmedPlace;
 import com.mog.project.domain.midpoint.entity.DepartureLocation;
 import com.mog.project.domain.midpoint.entity.MiddlePoint;
 import com.mog.project.domain.midpoint.entity.TravelTime;
+import com.mog.project.domain.groups.repository.GroupMemberRepository;
 import com.mog.project.domain.midpoint.repository.ConfirmedPlaceRepository;
 import com.mog.project.domain.midpoint.repository.DepartureLocationRepository;
 import com.mog.project.domain.midpoint.repository.MiddlePointRepository;
 import com.mog.project.domain.midpoint.repository.TravelTimeRepository;
+import com.mog.project.domain.notification.entity.NotificationType;
+import com.mog.project.domain.notification.service.NotificationService;
 import com.mog.project.domain.room.entity.Room;
 import com.mog.project.domain.room.repository.RoomRepository;
 import com.mog.project.domain.user.entity.User;
@@ -44,8 +47,10 @@ public class MidpointService {
     private final TravelTimeRepository travelTimeRepository;
     private final UserRepository userRepository;
     private final RoomRepository roomRepository;
+    private final GroupMemberRepository groupMemberRepository;
     private final KakaoMobilityClient kakaoMobilityClient;
     private final MidpointWebSocketPublisher midpointWebSocketPublisher;
+    private final NotificationService notificationService;
  
     // kakaoId → User 변환 공통 메서드
     private User getUser(String kakaoId) {
@@ -284,10 +289,19 @@ public class MidpointService {
                 ));
  
         ConfirmedPlaceResponse response = ConfirmedPlaceResponse.from(confirmedPlace);
- 
+
         // 장소 확정 WS 브로드캐스트
         midpointWebSocketPublisher.publishConfirmedPlace(roomId, response);
- 
+
+        String message = "[" + room.getRoomName() + "] 장소가 확정됐습니다.";
+        groupMemberRepository.findByGroupGroupId(room.getGroup().getGroupId())
+                .forEach(gm -> notificationService.send(
+                        gm.getUser().getUserId(),
+                        NotificationType.PLACE_CONFIRMED,
+                        message,
+                        roomId
+                ));
+
         return response;
     }
 }

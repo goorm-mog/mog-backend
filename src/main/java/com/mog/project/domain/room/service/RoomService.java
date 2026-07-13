@@ -5,6 +5,8 @@ import com.mog.project.domain.groups.entity.GroupMember;
 import com.mog.project.domain.groups.repository.GroupMemberRepository;
 import com.mog.project.domain.groups.repository.GroupRepository;
 import com.mog.project.domain.meeting.repository.MeetingRecordRepository;
+import com.mog.project.domain.notification.entity.NotificationType;
+import com.mog.project.domain.notification.service.NotificationService;
 import com.mog.project.domain.room.dto.request.RoomCreateRequest;
 import com.mog.project.domain.room.dto.request.RoomStepRequest;
 import com.mog.project.domain.room.dto.response.RoomCloseResponse;
@@ -38,6 +40,7 @@ public class RoomService {
    private final UserRepository userRepository;
    private final RoomMemberRepository roomMemberRepository;
    private final MeetingRecordRepository meetingRecordRepository;
+   private final NotificationService notificationService;
 
    @Transactional
    public RoomCreateResponse createRoom(String kakaoId, Long groupId, RoomCreateRequest request) {
@@ -68,6 +71,14 @@ public class RoomService {
             .build())
          .toList();
       roomMemberRepository.saveAll(roomMembers);
+
+      String message = "[" + group.getGroupName() + "] " + room.getRoomName() + " 방이 생성됐습니다.";
+      groupMembers.forEach(gm -> notificationService.send(
+              gm.getUser().getUserId(),
+              NotificationType.ROOM_CREATED,
+              message,
+              room.getRoomId()
+      ));
 
       return new RoomCreateResponse(
               room.getRoomId(),
