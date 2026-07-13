@@ -83,12 +83,16 @@ public class KakaoMobilityClient {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode root = objectMapper.readTree(response);
-            return root
-                    .path("routes")
-                    .get(0)
+            JsonNode routes = root.path("routes");
+            if (routes.isEmpty() || routes.get(0) == null) {
+                throw new RuntimeException("카카오 모빌리티 API: 경로를 찾을 수 없습니다. 응답: " + response);
+            }
+            return routes.get(0)
                     .path("summary")
                     .path("duration")
                     .asInt();
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("카카오 모빌리티 API 응답 파싱 실패: " + e.getMessage());
         }
