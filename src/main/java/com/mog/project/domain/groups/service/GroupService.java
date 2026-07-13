@@ -16,8 +16,10 @@ import com.mog.project.domain.groups.entity.GroupMember;
 import com.mog.project.domain.groups.entity.GroupMemberRole;
 import com.mog.project.domain.groups.repository.GroupMemberRepository;
 import com.mog.project.domain.groups.repository.GroupRepository;
-import com.mog.project.domain.user.entity.User;             
-import com.mog.project.domain.user.repository.UserRepository;      
+import com.mog.project.domain.notification.entity.NotificationType;
+import com.mog.project.domain.notification.service.NotificationService;
+import com.mog.project.domain.user.entity.User;
+import com.mog.project.domain.user.repository.UserRepository;
 import com.mog.project.global.exception.AuthException;
 import com.mog.project.global.exception.ErrorCode;
 import com.mog.project.global.exception.GlobalException;
@@ -39,6 +41,7 @@ public class GroupService {
     private final GroupMemberRepository groupMemberRepository;
     private final UserRepository userRepository;
     private final RoomRepository roomRepository;
+    private final NotificationService notificationService;
     // 초대 코드 생성 시 중복 방지를 위해 SecureRandom 사용
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -92,6 +95,16 @@ public class GroupService {
             .role(GroupMemberRole.MEMBER)
             .build();
         groupMemberRepository.save(groupMember);
+
+        String message = "[" + group.getGroupName() + "] " + user.getNickname() + "님이 합류했습니다.";
+        groupMemberRepository.findByGroupGroupId(group.getGroupId()).stream()
+                .filter(gm -> !gm.getUser().getUserId().equals(user.getUserId()))
+                .forEach(gm -> notificationService.send(
+                        gm.getUser().getUserId(),
+                        NotificationType.GROUP_INVITED,
+                        message,
+                        null
+                ));
 
         return new GroupJoinResponse(
             group.getGroupId(),

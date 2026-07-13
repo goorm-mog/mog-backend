@@ -10,10 +10,13 @@ import com.mog.project.domain.midpoint.entity.ConfirmedPlace;
 import com.mog.project.domain.midpoint.entity.DepartureLocation;
 import com.mog.project.domain.midpoint.entity.MiddlePoint;
 import com.mog.project.domain.midpoint.entity.TravelTime;
+import com.mog.project.domain.groups.entity.Group;
+import com.mog.project.domain.groups.repository.GroupMemberRepository;
 import com.mog.project.domain.midpoint.repository.ConfirmedPlaceRepository;
 import com.mog.project.domain.midpoint.repository.DepartureLocationRepository;
 import com.mog.project.domain.midpoint.repository.MiddlePointRepository;
 import com.mog.project.domain.midpoint.repository.TravelTimeRepository;
+import com.mog.project.domain.notification.service.NotificationService;
 import com.mog.project.domain.room.entity.Room;
 import com.mog.project.domain.room.repository.RoomRepository;
 import com.mog.project.domain.user.entity.User;
@@ -47,8 +50,10 @@ class MidpointServiceTest {
     @Mock private TravelTimeRepository travelTimeRepository;
     @Mock private UserRepository userRepository;
     @Mock private RoomRepository roomRepository;
+    @Mock private GroupMemberRepository groupMemberRepository;
     @Mock private KakaoMobilityClient kakaoMobilityClient;
     @Mock private MidpointWebSocketPublisher midpointWebSocketPublisher;
+    @Mock private NotificationService notificationService;
  
     @InjectMocks
     private MidpointService midpointService;
@@ -76,7 +81,7 @@ class MidpointServiceTest {
                 .profileImageUrl(null)
                 .build();
         ReflectionTestUtils.setField(creator, "userId", creatorId);
- 
+
         Room room = mock(Room.class);
         given(room.getCreator()).willReturn(creator);
         given(room.getDeletedAt()).willReturn(null);
@@ -330,6 +335,11 @@ class MidpointServiceTest {
         // given
         User user = mockUser();
         Room room = mockRoom(userId);
+        Group group = Group.builder()
+                .groupName("테스트그룹").inviteCode("ABC123").kakaoShareUrl("https://mo-ge.site/join?code=ABC123").build();
+        ReflectionTestUtils.setField(group, "groupId", 100L);
+        given(room.getRoomName()).willReturn("테스트방");
+        given(room.getGroup()).willReturn(group);
         given(userRepository.findByKakaoId(kakaoId)).willReturn(Optional.of(user));
         given(roomRepository.findById(roomId)).willReturn(Optional.of(room));
         given(confirmedPlaceRepository.findByRoomId(roomId)).willReturn(Optional.empty());
@@ -350,10 +360,11 @@ class MidpointServiceTest {
                 .build();
  
         given(confirmedPlaceRepository.save(any())).willReturn(confirmedPlace);
- 
+        given(groupMemberRepository.findByGroupGroupId(any())).willReturn(List.of());
+
         // when
         ConfirmedPlaceResponse response = midpointService.confirmPlace(roomId, kakaoId, request);
- 
+
         // then
         assertThat(response.placeName()).isEqualTo("스시조");
         verify(confirmedPlaceRepository, times(1)).save(any());

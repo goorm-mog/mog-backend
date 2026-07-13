@@ -47,12 +47,13 @@ class RoomServiceTest {
     @Mock private UserRepository userRepository;
     @Mock private RoomMemberRepository roomMemberRepository;
     @Mock private MeetingRecordRepository meetingRecordRepository;
+    @Mock private com.mog.project.domain.notification.service.NotificationService notificationService;
 
     private RoomService roomService;
 
     @BeforeEach
     void setUp() {
-        roomService = new RoomService(roomRepository, groupRepository, groupMemberRepository, userRepository, roomMemberRepository, meetingRecordRepository);
+        roomService = new RoomService(roomRepository, groupRepository, groupMemberRepository, userRepository, roomMemberRepository, meetingRecordRepository, notificationService);
     }
 
     // ---- 방 생성 ----

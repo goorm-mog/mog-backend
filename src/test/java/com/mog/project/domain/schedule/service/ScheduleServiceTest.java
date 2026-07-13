@@ -2,8 +2,11 @@ package com.mog.project.domain.schedule.service;
 
 import com.mog.project.domain.midpoint.repository.DepartureLocationRepository;
 import com.mog.project.domain.midpoint.repository.MiddlePointRepository;
+import com.mog.project.domain.notification.service.NotificationService;
+import com.mog.project.domain.room.entity.Room;
 import com.mog.project.domain.room.entity.RoomMember;
 import com.mog.project.domain.room.repository.RoomMemberRepository;
+import com.mog.project.domain.room.repository.RoomRepository;
 import com.mog.project.domain.schedule.dto.ScheduleConfirmRequest;
 import com.mog.project.domain.schedule.dto.ScheduleStatusResponse;
 import com.mog.project.domain.schedule.dto.SlotCreateRequest;
@@ -48,9 +51,11 @@ class ScheduleServiceTest {
     @Mock private ScheduleWebSocketPublisher scheduleWebSocketPublisher;
     @Mock private UserRepository userRepository;
     @Mock private RoomMemberRepository roomMemberRepository;
+    @Mock private RoomRepository roomRepository;
     @Mock private KakaoCalendarClient kakaoCalendarClient;
     @Mock private DepartureLocationRepository departureLocationRepository;
     @Mock private MiddlePointRepository middlePointRepository;
+    @Mock private NotificationService notificationService;
  
     @InjectMocks
     private ScheduleService scheduleService;
@@ -227,15 +232,19 @@ class ScheduleServiceTest {
  
         given(confirmedScheduleRepository.findByRoomId(roomId)).willReturn(Optional.empty());
         given(confirmedScheduleRepository.save(any())).willReturn(confirmedSchedule);
- 
+
         RoomMember roomMember = mock(RoomMember.class);
         given(roomMember.getUser()).willReturn(user);
         given(roomMemberRepository.findByRoomRoomId(roomId)).willReturn(List.of(roomMember));
         given(kakaoCalendarClient.createEvent(any(), any(), any(), any())).willReturn("kakao_event_123");
- 
+
+        Room room = mock(Room.class);
+        given(room.getRoomName()).willReturn("테스트방");
+        given(roomRepository.findById(roomId)).willReturn(Optional.of(room));
+
         // when
         ConfirmedScheduleResponse response = scheduleService.confirm(roomId, kakaoId, request);
- 
+
         // then
         assertThat(response.date()).isEqualTo(LocalDate.of(2025, 7, 1));
         assertThat(response.time()).isEqualTo(LocalTime.of(18, 0));
@@ -266,14 +275,18 @@ class ScheduleServiceTest {
         ReflectionTestUtils.setField(existing, "kakaoEventId", "kakao_event_123");
  
         given(confirmedScheduleRepository.findByRoomId(roomId)).willReturn(Optional.of(existing));
- 
+
         RoomMember roomMember = mock(RoomMember.class);
         given(roomMember.getUser()).willReturn(user);
         given(roomMemberRepository.findByRoomRoomId(roomId)).willReturn(List.of(roomMember));
- 
+
+        Room room = mock(Room.class);
+        given(room.getRoomName()).willReturn("테스트방");
+        given(roomRepository.findById(roomId)).willReturn(Optional.of(room));
+
         // when
         ConfirmedScheduleResponse response = scheduleService.confirm(roomId, kakaoId, request);
- 
+
         // then
         assertThat(response.date()).isEqualTo(LocalDate.of(2025, 7, 3));
         assertThat(response.time()).isEqualTo(LocalTime.of(20, 0));
