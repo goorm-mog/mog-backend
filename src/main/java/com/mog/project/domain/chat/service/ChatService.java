@@ -4,6 +4,7 @@ import com.mog.project.domain.chat.dto.request.ChatMessageRequest;
 import com.mog.project.domain.chat.dto.response.ChatMessageResponse;
 import com.mog.project.domain.chat.entity.ChatMessage;
 import com.mog.project.domain.chat.repository.ChatMessageRepository;
+import   com.mog.project.domain.chat.dto.response.ChatHistoryResponse;
 import com.mog.project.domain.room.entity.Room;
 import com.mog.project.domain.room.repository.RoomMemberRepository;
 import com.mog.project.domain.room.repository.RoomRepository;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
@@ -56,19 +58,26 @@ public class ChatService {
     }
 
     @Transactional(readOnly = true)
-    public List<ChatMessageResponse> getHistory(String kakaoId, Long roomId) {
+    public ChatHistoryResponse getHistory(String kakaoId, Long roomId, LocalDateTime cursor, int size) {
         User user = userRepository.findByKakaoId(kakaoId)
             .orElseThrow(() -> new AuthException(ErrorCode.UNAUTHORIZED_USER));
-        
-        // 채팅방에 없어도 멤버라면 나중에 조회 가능
+
         if (!roomMemberRepository.existsByRoomRoomIdAndUserUserId(roomId, user.getUserId())) {
             throw new GlobalException(ErrorCode.NOT_ROOM_MEMBER);
         }
 
-        return chatMessageRepository.findByRoomRoomIdOrderByCreatedAtAsc(roomId)
+        List<ChatMessage> messages = (cursor == null)
+            ? chatMessageRepository.findWithSenderByRoomId(roomId, size)
+            : chatMessageRepository.findWithSenderByRoomIdAndCursor(roomId, cursor, size);
+
+        boolean hasNext = messages.size() == size;
+        LocalDateTime nextCursor = hasNext ? messages.get(messages.size() - 1).getCreatedAt() : null;
+
+        List<ChatMessageResponse> result = messages.reversed()
             .stream()
             .map(ChatMessageResponse::from)
             .toList();
+
+        return new ChatHistoryResponse(result, nextCursor, hasNext);
     }
-    
 }

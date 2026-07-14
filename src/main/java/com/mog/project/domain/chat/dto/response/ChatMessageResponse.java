@@ -5,6 +5,7 @@ import java.time.LocalDateTime;
 public record ChatMessageResponse (
     Long roomId,
     Long senderId,
+    String senderKakaoId,
     String senderName,
     String message,
     LocalDateTime timestamp
@@ -14,6 +15,7 @@ public record ChatMessageResponse (
         return new ChatMessageResponse(
             chatMessage.getRoom().getRoomId(),
             chatMessage.getSender().getUserId(),
+            chatMessage.getSender().getKakaoId(),
             chatMessage.getSender().getNickname(),
             chatMessage.getMessage(),
             chatMessage.getCreatedAt()
