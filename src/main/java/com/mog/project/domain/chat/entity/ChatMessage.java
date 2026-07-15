@@ -1,14 +1,18 @@
 package com.mog.project.domain.chat.entity;
 
- import com.mog.project.domain.room.entity.Room;
+import com.mog.project.domain.room.entity.Room;
 import com.mog.project.domain.user.entity.User;
 import com.mog.project.global.common.BaseTimeEntity;
 import jakarta.persistence.*;
+import jakarta.persistence.Index;
 import lombok.*;
 
 
 @Entity
-@Table(name = "chat_messages")
+@Table(name = "chat_messages", indexes = {
+    @Index(name = "idx_chat_room_created", columnList
+        = "room_id, created_at")
+})
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class ChatMessage extends BaseTimeEntity {
